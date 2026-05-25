@@ -155,15 +155,36 @@ export default function Home() {
       const res = await ReconciliationApiService.runReconciliation(sessionId);
       
       if (res.success && res.data) {
-        setReconciliationSummary(res.data.summary);
+        setProcessLogs((prev) => [...prev, "Waiting for background workers to finalize..."]);
         
-        // Fetch detailed results list immediately
-        const resultsRes = await ReconciliationApiService.getReconciliationResults(sessionId);
-        if (resultsRes.success && resultsRes.data) {
-          setReconciliationResults(resultsRes.data);
+        // Poll for summary completion since it's a background task
+        let summaryData = null;
+        for (let attempts = 0; attempts < 15; attempts++) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          try {
+            const summaryRes = await ReconciliationApiService.getReconciliationSummary(sessionId);
+            if (summaryRes.success && summaryRes.data && (summaryRes.data.matched_count > 0 || summaryRes.data.mismatch_count > 0)) {
+              summaryData = summaryRes.data;
+              break;
+            }
+          } catch (e) {
+            // Ignore temporary network errors during polling
+          }
         }
-        
-        setProcessCompleted(true);
+
+        if (summaryData) {
+          setReconciliationSummary(summaryData);
+          
+          // Fetch detailed results list immediately
+          const resultsRes = await ReconciliationApiService.getReconciliationResults(sessionId);
+          if (resultsRes.success && resultsRes.data) {
+            setReconciliationResults(resultsRes.data);
+          }
+          
+          setProcessCompleted(true);
+        } else {
+          setReconError("Engine timeout. Background matching took too long.");
+        }
       } else {
         setReconError(res.errors?.[0] || "Backend matching engine failed.");
       }
