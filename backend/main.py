@@ -4,6 +4,9 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.utils.logging import logger
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from app.db.session import engine
 from app.models.base import init_db
 from app.services.upload import UploadService
@@ -18,11 +21,14 @@ from app.api.v1.investigation import router as investigation_router
 from app.api.v1.ai_assistant import router as ai_assistant_router
 from app.api.v1.reports import router as reports_router
 # 1. Initialize FastAPI Application
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Fintech-grade transaction matching and ledger comparison platform.",
-    version="0.1.0-alpha",
+    version="0.4.0",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 2. Configure CORS middleware (cross-origin resource sharing policy)
 app.add_middleware(
@@ -32,6 +38,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 2b. Observability middleware
+from app.core.observability import RequestTimingMiddleware
+app.add_middleware(RequestTimingMiddleware)
 
 # 3. Standardized Global Exception Handling
 @app.exception_handler(Exception)
