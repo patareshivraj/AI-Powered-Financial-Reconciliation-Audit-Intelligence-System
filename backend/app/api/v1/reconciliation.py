@@ -1,103 +1,177 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import List
 from app.db.session import get_db
-from app.services.upload import UploadService
-from app.schemas.transaction import SessionResponse, SessionCreate
-from app.models.base import ReconciliationSession
+from app.services.reconciliation_service import ReconciliationService
+from app.schemas.reconciliation import (
+    RunReconciliationResponse,
+    ReconciliationResultSchema,
+    ReconciliationSummarySchema,
+    TransactionRepresentation
+)
+from app.schemas.upload import StandardResponse
 from app.utils.logging import logger
-import os
+import pandas as pd
+import io
 
-router = APIRouter()
+router = APIRouter(tags=["Reconciliation"])
 
-@router.post("/session", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
-def create_reconciliation_session(
-    session_data: SessionCreate,
-    db: Session = Depends(get_db)
-):
+@router.post("/run/{session_id}", response_model=StandardResponse[RunReconciliationResponse])
+async def run_reconciliation(session_id: str, db: Session = Depends(get_db)):
     """
-    Creates a new transactional reconciliation session in SQLite database.
+    Executes the rule-based matching engine on parsed bank and external transactions.
     """
-    logger.info(f"Initializing new reconciliation session record: {session_data.session_name}")
+    logger.info(f"API: Running reconciliation for session: {session_id}")
     try:
-        new_session = ReconciliationSession(
-            session_name=session_data.session_name,
-            status="INIT",
-            bank_file_name=session_data.bank_file_name,
-            ledger_file_name=session_data.ledger_file_name
+        data = ReconciliationService.run_reconciliation(session_id, db)
+        return StandardResponse(
+            success=True,
+            message="Reconciliation pipeline completed successfully.",
+            data=data,
+            errors=[]
         )
-        db.add(new_session)
-        db.commit()
-        db.refresh(new_session)
-        return new_session
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to compile session registry: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to record reconciliation session details: {e}"
+        logger.error(f"API Error running reconciliation: {str(e)}")
+        return StandardResponse(
+            success=False,
+            message="Failed running reconciliation engine.",
+            data=None,
+            errors=[str(e)]
         )
 
-@router.get("/sessions", response_model=List[SessionResponse])
-def list_reconciliation_sessions(
-    db: Session = Depends(get_db)
-):
+@router.get("/results/{session_id}", response_model=StandardResponse[list[ReconciliationResultSchema]])
+async def get_reconciliation_results(session_id: str, db: Session = Depends(get_db)):
     """
-    Retrieves all reconciliation sessions logged in the platform history database.
+    Fetches the detailed matched and unmatched transaction pairings.
     """
-    logger.info("Listing all historical reconciliation audit sessions.")
-    return db.query(ReconciliationSession).order_by(ReconciliationSession.created_at.desc()).all()
+    logger.info(f"API: Fetching results for session: {session_id}")
+    try:
+        db_results = ReconciliationService.get_results(session_id, db)
+        
+        # Serialize results to match schema requirements
+        serialized = []
+        for r in db_results:
+            b_rep = None
+            if r.bank_transaction:
+                b_rep = TransactionRepresentation.model_validate(r.bank_transaction)
+                
+            e_rep = None
+            if r.ledger_transaction:
+                e_rep = TransactionRepresentation.model_validate(r.ledger_transaction)
 
-@router.post("/upload/{session_id}")
-def upload_reconciliation_file(
+            serialized.append(ReconciliationResultSchema(
+                id=r.id,
+                session_id=r.session_id,
+                bank_transaction_id=r.bank_transaction_id,
+                ledger_transaction_id=r.ledger_transaction_id,
+                status=r.match_type,
+                match_score=r.match_score,
+                remarks=r.comments,
+                bank_transaction=b_rep,
+                ledger_transaction=e_rep
+            ))
+
+        return StandardResponse(
+            success=True,
+            message="Reconciliation results fetched successfully.",
+            data=serialized,
+            errors=[]
+        )
+    except Exception as e:
+        logger.error(f"API Error getting reconciliation results: {str(e)}")
+        return StandardResponse(
+            success=False,
+            message="Failed getting reconciliation results.",
+            data=[],
+            errors=[str(e)]
+        )
+
+@router.get("/summary/{session_id}", response_model=StandardResponse[ReconciliationSummarySchema])
+async def get_reconciliation_summary(session_id: str, db: Session = Depends(get_db)):
+    """
+    Computes/fetches the high-level match efficiency indicators.
+    """
+    logger.info(f"API: Fetching summary for session: {session_id}")
+    try:
+        data = ReconciliationService.get_summary(session_id, db)
+        return StandardResponse(
+            success=True,
+            message="Reconciliation summary fetched successfully.",
+            data=data,
+            errors=[]
+        )
+    except Exception as e:
+        logger.error(f"API Error getting summary: {str(e)}")
+        return StandardResponse(
+            success=False,
+            message="Failed getting reconciliation summary.",
+            data=None,
+            errors=[str(e)]
+        )
+
+@router.get("/export/{session_id}")
+async def export_reconciliation_results(
     session_id: str,
-    file_type: str = Form(..., description="Type of document: BANK_STATEMENT or EXTERNAL_LEDGER"),
-    file: UploadFile = File(...),
+    format: str = Query("csv", regex="^(csv|xlsx)$"),
     db: Session = Depends(get_db)
 ):
     """
-    Safe file upload handler endpoint.
-    Saves document under unique subfolder, validates extension & size, and updates SQLite session metadata.
+    Generates downloadable report logs (CSV or XLSX) of matched and mismatched transactions.
     """
-    # 1. Verify target session exists in DB
-    session_record = db.query(ReconciliationSession).filter(ReconciliationSession.id == session_id).first()
-    if not session_record:
-        logger.warning(f"File upload requested for non-existent session ID: {session_id}")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Reconciliation session with ID {session_id} not found."
-        )
-
-    # 2. Pipe file to disk using validation-first upload services
+    logger.info(f"API: Generating {format.upper()} export for session {session_id}")
     try:
-        subfolder = f"session_{session_id}/{file_type.lower()}"
-        saved_path = UploadService.save_uploaded_file(file, subfolder=subfolder)
+        db_results = ReconciliationService.get_results(session_id, db)
         
-        # 3. Update database record with filenames and pipeline stage state
-        if file_type.upper() == "BANK_STATEMENT":
-            session_record.bank_file_name = file.filename
-        else:
-            session_record.ledger_file_name = file.filename
+        # Build flattened dataframe structures
+        rows = []
+        for r in db_results:
+            b_tx = r.bank_transaction
+            e_tx = r.ledger_transaction
             
-        session_record.status = "PARSING"
-        db.commit()
-        db.refresh(session_record)
+            rows.append({
+                "Result ID": r.id,
+                "Match Status": r.match_type,
+                "Match Score (%)": r.match_score,
+                "Remarks": r.comments,
+                "Reference Code": b_tx.reference if b_tx else (e_tx.reference if e_tx else "N/A"),
+                "Bank Amount": b_tx.amount if b_tx else None,
+                "Ledger Amount": e_tx.amount if e_tx else None,
+                "Bank Value Date": b_tx.transaction_date.strftime("%Y-%m-%d %H:%M:%S") if b_tx else "N/A",
+                "Ledger Value Date": e_tx.transaction_date.strftime("%Y-%m-%d %H:%M:%S") if e_tx else "N/A",
+                "Bank Description": b_tx.description if b_tx else "N/A",
+                "Ledger Description": e_tx.description if e_tx else "N/A"
+            })
+            
+        df = pd.DataFrame(rows)
         
-        logger.info(f"Recorded upload file {file.filename} under session {session_id}")
-        
-        return {
-            "status": "success",
-            "message": f"Successfully persisted {file_type} to disk.",
-            "file_path": saved_path,
-            "filename": file.filename
-        }
-    except HTTPException:
-        db.rollback()
-        raise
+        if df.empty:
+            # Fallback if no records found
+            df = pd.DataFrame(columns=["Result ID", "Match Status", "Match Score (%)", "Remarks"])
+
+        if format == "csv":
+            stream = io.StringIO()
+            df.to_csv(stream, index=False)
+            response = StreamingResponse(
+                iter([stream.getvalue()]),
+                media_type="text/csv"
+            )
+            response.headers["Content-Disposition"] = f"attachment; filename=reconciliation_report_{session_id}.csv"
+            return response
+        else:
+            # Excel export
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                df.to_excel(writer, index=False, sheet_name="Reconciliation Report")
+            output.seek(0)
+            response = StreamingResponse(
+                io.BytesIO(output.read()),
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            response.headers["Content-Disposition"] = f"attachment; filename=reconciliation_report_{session_id}.xlsx"
+            return response
+
     except Exception as e:
-        db.rollback()
-        logger.error(f"Database write failed for upload tracking: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bind uploaded file details to session: {e}"
-        )
+        logger.error(f"API Error generating export: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed compiling export report: {str(e)}")

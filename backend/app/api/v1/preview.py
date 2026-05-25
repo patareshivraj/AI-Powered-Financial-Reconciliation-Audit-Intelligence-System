@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import os
 import glob
 import pandas as pd
+import numpy as np
 from app.db.session import get_db
 from app.core.config import settings
 from app.services.parser_service import ParserService
