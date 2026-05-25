@@ -18,7 +18,7 @@ from app.utils.logging import logger
 router = APIRouter(tags=["Authentication"])
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     full_name: str
     organization_name: str

@@ -30,11 +30,17 @@ class Settings(BaseSettings):
     # Groq AI Settings (Phase 3 Activation)
     GROQ_API_KEY: str = Field(default="", description="Groq AI API authorization token.")
     GROQ_MODEL: str = Field(default="llama3-70b-8192", description="Target Llama Groq Model.")
+    
+    # Auth & Environment
+    ENVIRONMENT: str = Field(default="local", description="Deployment environment")
+    JWT_SECRET: str = Field(default="secret", description="JWT signing secret")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=1440, description="Token expiry")
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True
+        case_sensitive=True,
+        extra="ignore"
     )
 
 # Instantiate settings

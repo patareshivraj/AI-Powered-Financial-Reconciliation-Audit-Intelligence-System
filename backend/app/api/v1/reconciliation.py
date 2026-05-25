@@ -65,7 +65,11 @@ async def run_reconciliation(
         )
 
 @router.get("/results/{session_id}", response_model=StandardResponse)
-async def get_reconciliation_results(session_id: str, db: Session = Depends(get_db)):
+async def get_reconciliation_results(
+    session_id: str, 
+    db: Session = Depends(get_db),
+    user: User = Depends(require_any_role)
+):
     """
     Fetches the detailed matched and unmatched transaction pairings.
     """
