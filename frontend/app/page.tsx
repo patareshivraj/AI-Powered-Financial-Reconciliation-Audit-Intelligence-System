@@ -159,8 +159,8 @@ export default function Home() {
         
         // Poll for summary completion since it's a background task
         let summaryData = null;
-        for (let attempts = 0; attempts < 15; attempts++) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+        for (let attempts = 0; attempts < 60; attempts++) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           try {
             const summaryRes = await ReconciliationApiService.getReconciliationSummary(sessionId);
             if (summaryRes.success && summaryRes.data && (summaryRes.data.matched_count > 0 || summaryRes.data.mismatch_count > 0)) {
