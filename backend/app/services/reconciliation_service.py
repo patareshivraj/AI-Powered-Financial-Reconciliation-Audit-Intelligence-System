@@ -7,6 +7,13 @@ from app.schemas.reconciliation import RunReconciliationResponse, Reconciliation
 from app.utils.logging import logger
 from fastapi import HTTPException
 from typing import List
+import os
+import glob
+import pandas as pd
+from datetime import datetime
+from app.core.config import settings
+from app.services.parser_service import ParserService
+from app.services.normalizer_service import NormalizerService
 
 class ReconciliationService:
     @staticmethod
@@ -30,6 +37,35 @@ class ReconciliationService:
 
         # 2. Load all transactions linked to this session
         all_txs = db.query(Transaction).filter(Transaction.session_id == session_id).all()
+        if not all_txs:
+            logger.info("Transactions not yet loaded in DB. Parsing from isolated sandbox...")
+            session_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR, session_id))
+            
+            def load_source(file_pattern, source_type):
+                matches = glob.glob(os.path.join(session_dir, f"{file_pattern}.*"))
+                if not matches: return
+                raw_df = ParserService.parse_file(matches[0])
+                normalized_df = NormalizerService.normalize_dataframe(raw_df, source_type)
+                txs = []
+                for _, row in normalized_df.iterrows():
+                    dt = pd.to_datetime(row.get('date')) if pd.notna(row.get('date')) else datetime.utcnow()
+                    txs.append(Transaction(
+                        session_id=session_id,
+                        source_type=source_type,
+                        transaction_date=dt,
+                        amount=float(row.get('amount', 0.0)) if pd.notna(row.get('amount')) else 0.0,
+                        reference=str(row.get('reference_id')) if pd.notna(row.get('reference_id')) else None,
+                        description=str(row.get('description')) if pd.notna(row.get('description')) else None
+                    ))
+                db.add_all(txs)
+                db.commit()
+
+            load_source("bank_statement", "BANK_STATEMENT")
+            load_source("external_transactions", "EXTERNAL_LEDGER")
+            
+            # Reload from db
+            all_txs = db.query(Transaction).filter(Transaction.session_id == session_id).all()
+            
         if not all_txs:
             logger.error(f"No transactions found for session {session_id}.")
             raise HTTPException(

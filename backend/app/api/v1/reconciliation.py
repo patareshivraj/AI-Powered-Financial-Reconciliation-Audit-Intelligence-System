@@ -37,7 +37,7 @@ async def run_reconciliation(
     session_id: str, 
     background_tasks: BackgroundTasks, 
     db: Session = Depends(get_db),
-    user: User = Depends(require_admin) # Only Admins can trigger hard reconciliations
+    user: User = Depends(require_analyst_or_admin) # Analysts and Admins can trigger reconciliations
 ):
     """
     Executes the rule-based matching engine on parsed bank and external transactions in the background.
