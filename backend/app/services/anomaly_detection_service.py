@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.base import ReconciliationResult
 from app.utils.logging import logger
 from typing import Dict, Any, List
@@ -14,7 +14,10 @@ class AnomalyDetectionService:
         """
         logger.info(f"Running deterministic anomaly detection for session {session_id}")
         
-        mismatches = db.query(ReconciliationResult).filter(
+        mismatches = db.query(ReconciliationResult).options(
+            joinedload(ReconciliationResult.bank_transaction),
+            joinedload(ReconciliationResult.ledger_transaction)
+        ).filter(
             ReconciliationResult.session_id == session_id,
             ReconciliationResult.match_type != "MATCHED"
         ).all()

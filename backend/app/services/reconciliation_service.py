@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.base import ReconciliationSession, Transaction, ReconciliationResult
 from app.services.duplicate_detection_service import DuplicateDetectionService
 from app.services.matching_service import MatchingService
@@ -146,7 +146,10 @@ class ReconciliationService:
         Retrieves matching results for a specific session ID, joining transaction tables
         to include full canonical descriptions, reference codes, dates, and amounts.
         """
-        return db.query(ReconciliationResult).filter(
+        return db.query(ReconciliationResult).options(
+            joinedload(ReconciliationResult.bank_transaction),
+            joinedload(ReconciliationResult.ledger_transaction)
+        ).filter(
             ReconciliationResult.session_id == session_id
         ).all()
 
