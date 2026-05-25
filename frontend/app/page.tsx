@@ -37,7 +37,7 @@ import { UploadApiService } from "../services/upload-api";
 import { SessionPreviewResponse } from "../types/upload";
 
 // Import custom Phase 2 UI components & services
-import { ReconciliationApiService, ReconciliationSummary, ReconciliationResult } from "../services/reconciliation-api";
+import { ReconciliationApiService, ReconciliationSummary, ReconciliationResult, ReconciliationAiSummary } from "../services/reconciliation-api";
 import { ReconciliationSummaryCards } from "../components/reconciliation-summary-cards";
 import { ReconciliationTable } from "../components/reconciliation-table";
 
@@ -70,6 +70,11 @@ export default function Home() {
   const [processLogs, setProcessLogs] = useState<string[]>([]);
   const [processCompleted, setProcessCompleted] = useState(false);
   const [reconError, setReconError] = useState("");
+
+  // Phase 3 AI Summary states
+  const [aiSummary, setAiSummary] = useState<ReconciliationAiSummary | null>(null);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState("");
 
   // Active workspace table view (switch between file previewer vs reconciliation pairings)
   const [workspaceTab, setWorkspaceTab] = useState<"reconciliation" | "bank" | "ledger">("reconciliation");
@@ -160,6 +165,27 @@ export default function Home() {
       setIsProcessing(false);
     }
   };
+
+  // Generate Llama-3 executive insights and summary aggregates
+  const generateAiInsights = async () => {
+    if (!sessionId) return;
+    setAiSummaryLoading(true);
+    setAiSummaryError("");
+    setAiSummary(null);
+    try {
+      const res = await ReconciliationApiService.getAiSummary(sessionId);
+      if (res.success && res.data) {
+        setAiSummary(res.data);
+      } else {
+        setAiSummaryError(res.errors?.[0] || "AI aggregate summary failed.");
+      }
+    } catch (err: any) {
+      setAiSummaryError(err.message || "Failed connecting with the Llama-3 compiler.");
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  };
+
 
   return (
     <div className="flex h-screen bg-neutral-950 text-neutral-100 overflow-hidden">
@@ -442,6 +468,78 @@ export default function Home() {
                     )}
                   </div>
                 )}
+
+                {/* AI Executive Summary Block (Only display if matching run is completed) */}
+                {processCompleted && reconciliationSummary && (
+                  <div className="bg-neutral-900/40 border border-neutral-900 rounded-xl p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-neutral-900 pb-4">
+                      <div className="flex items-center gap-2.5">
+                        <Sparkles className="h-5 w-5 text-emerald-400 animate-pulse" />
+                        <div>
+                          <h3 className="text-base font-bold text-white">AI Copilot Executive Observations</h3>
+                          <p className="text-xs text-neutral-400 mt-0.5">Assistive insights generated on transaction mismatch anomalies using Llama-3</p>
+                        </div>
+                      </div>
+                      
+                      {!aiSummary && !aiSummaryLoading && (
+                        <button
+                          onClick={generateAiInsights}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-black px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          <span>Generate AI Observations</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Shimmer loading loader */}
+                    {aiSummaryLoading && (
+                      <div className="py-8 flex flex-col items-center justify-center space-y-3 animate-pulse">
+                        <RefreshCw className="h-6 w-6 text-emerald-400 animate-spin" />
+                        <span className="text-xs text-neutral-400 font-mono">Llama-3 scanning transaction datasets and anomaly logs...</span>
+                      </div>
+                    )}
+
+                    {/* Failed response */}
+                    {aiSummaryError && (
+                      <div className="p-4 border border-rose-500/20 bg-rose-950/10 rounded-xl text-xs space-y-1 text-rose-400">
+                        <p className="font-bold flex items-center gap-1.5"><ShieldAlert className="h-4 w-4" /> AI observations compile failed</p>
+                        <p className="text-neutral-400">{aiSummaryError}</p>
+                      </div>
+                    )}
+
+                    {/* Loaded results content */}
+                    {!aiSummaryLoading && !aiSummaryError && aiSummary && (
+                      <div className="space-y-6">
+                        {/* Summary review description */}
+                        <div className="p-4 bg-neutral-950/80 rounded-xl border border-neutral-900/60 text-xs text-neutral-300 leading-relaxed font-sans">
+                          {aiSummary.observations}
+                        </div>
+
+                        {/* Visual checklist/diagnostic grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {aiSummary.insights.map((ins, index) => (
+                            <div key={index} className="p-4 bg-slate-900/20 border border-slate-900 rounded-xl flex gap-3 text-xs">
+                              <span className="h-5 w-5 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-[10px] shrink-0">
+                                0{index + 1}
+                              </span>
+                              <span className="text-neutral-400 leading-relaxed font-sans">{ins}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Footer indicators and confidence levels */}
+                        <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-2 border-t border-neutral-900/40">
+                          <span className="flex items-center gap-1"><HelpCircle className="h-3.5 w-3.5" /> advisory assistive AI insights</span>
+                          <span className="font-mono">
+                            Confidence Score: <b className="text-emerald-400 font-bold">{aiSummary.confidence_score}% ({aiSummary.confidence_indicator})</b>
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
             </>
           )}
