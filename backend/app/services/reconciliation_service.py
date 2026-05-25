@@ -93,14 +93,19 @@ class ReconciliationService:
             raise HTTPException(status_code=500, detail=f"Reconciliation engine failed: {str(e)}")
 
     @staticmethod
-    def get_results(session_id: str, db: Session) -> List[ReconciliationResult]:
+    def get_results(session_id: str, db: Session, skip: int = 0, limit: int = 10000) -> List[ReconciliationResult]:
         """
         Retrieves matching results for a specific session ID, joining transaction tables
         to include full canonical descriptions, reference codes, dates, and amounts.
+        Optimized with joinedload to prevent N+1 query problems.
         """
-        return db.query(ReconciliationResult).filter(
+        from sqlalchemy.orm import joinedload
+        return db.query(ReconciliationResult).options(
+            joinedload(ReconciliationResult.bank_transaction),
+            joinedload(ReconciliationResult.ledger_transaction)
+        ).filter(
             ReconciliationResult.session_id == session_id
-        ).all()
+        ).offset(skip).limit(limit).all()
 
     @staticmethod
     def get_summary(session_id: str, db: Session) -> ReconciliationSummarySchema:

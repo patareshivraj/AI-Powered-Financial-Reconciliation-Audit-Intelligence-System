@@ -44,13 +44,18 @@ async def run_reconciliation(session_id: str, db: Session = Depends(get_db)):
         )
 
 @router.get("/results/{session_id}", response_model=StandardResponse)
-async def get_reconciliation_results(session_id: str, db: Session = Depends(get_db)):
+async def get_reconciliation_results(
+    session_id: str, 
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10000, ge=1, le=50000),
+    db: Session = Depends(get_db)
+):
     """
-    Fetches the detailed matched and unmatched transaction pairings.
+    Fetches the detailed matched and unmatched transaction pairings with pagination support.
     """
-    logger.info(f"API: Fetching results for session: {session_id}")
+    logger.info(f"API: Fetching results for session: {session_id} (skip={skip}, limit={limit})")
     try:
-        db_results = ReconciliationService.get_results(session_id, db)
+        db_results = ReconciliationService.get_results(session_id, db, skip=skip, limit=limit)
         
         # Serialize results to match schema requirements
         serialized = []
