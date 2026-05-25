@@ -14,6 +14,9 @@ from app.api.v1.reconciliation import router as recon_router
 from app.api.v1.uploads import router as uploads_router
 from app.api.v1.preview import router as preview_router
 from app.api.v1.ai import router as ai_router
+from app.api.v1.investigation import router as investigation_router
+from app.api.v1.ai_assistant import router as ai_assistant_router
+from app.api.v1.reports import router as reports_router
 # 1. Initialize FastAPI Application
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -52,6 +55,9 @@ app.include_router(recon_router, prefix=f"{settings.API_V1_STR}/reconciliation",
 app.include_router(uploads_router, prefix=f"{settings.API_V1_STR}/uploads", tags=["Upload Operations"])
 app.include_router(preview_router, prefix=f"{settings.API_V1_STR}/preview", tags=["Data Previewers"])
 app.include_router(ai_router, prefix=f"{settings.API_V1_STR}/ai", tags=["AI Intelligence"])
+app.include_router(investigation_router, prefix=f"{settings.API_V1_STR}/investigation", tags=["Investigation & Analytics"])
+app.include_router(ai_assistant_router, prefix=f"{settings.API_V1_STR}/ai-assistant", tags=["Conversational AI"])
+app.include_router(reports_router, prefix=f"{settings.API_V1_STR}/reports", tags=["Reports"])
 
 # 5. Startup Lifecycle Event: Auto-initialize storage structures and tables
 @app.on_event("startup")

@@ -42,6 +42,13 @@ import { AiApiService, ReconciliationAiSummary } from "../features/ai/services/a
 import { ReconciliationSummaryCards } from "../components/reconciliation-summary-cards";
 import { ReconciliationTable } from "../components/reconciliation-table";
 
+// Import custom Phase 4 UI components
+import { AnalyticsDashboard } from "../features/analytics/components/analytics-dashboard";
+import { AnomalyPanel } from "../features/investigation/components/anomaly-panel";
+import { MerchantDatagrid } from "../features/investigation/components/merchant-datagrid";
+import { AiChatAssistant } from "../features/ai-assistant/components/ai-chat-assistant";
+import { InvestigationApiService } from "../features/investigation/services/investigation-api";
+
 // Mock statistics logs for demonstration
 const RECONCILIATION_HISTORY = [
   { date: "May 20", matchRate: 98.4, totalVolume: 1205000, mismatchCount: 14 },
@@ -54,7 +61,7 @@ const RECONCILIATION_HISTORY = [
 
 export default function Home() {
   // Navigation active tab
-  const [activeTab, setActiveTab] = useState<"dashboard" | "workspace" | "history" | "settings">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "workspace" | "history" | "settings" | "analytics" | "investigation">("dashboard");
 
   // Phase 1 API session status
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
@@ -230,6 +237,34 @@ export default function Home() {
             >
               <Layers className="h-4 w-4" />
               Reconciliation Workspace
+            </button>
+            <button
+              onClick={() => setActiveTab("analytics")}
+              disabled={!reconciliationSummary}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                !reconciliationSummary 
+                  ? "opacity-40 cursor-not-allowed text-neutral-600" 
+                  : activeTab === "analytics"
+                    ? "bg-neutral-900 text-white border-l-2 border-emerald-500 pl-2.5"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
+              }`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              Advanced Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab("investigation")}
+              disabled={!reconciliationSummary}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                !reconciliationSummary 
+                  ? "opacity-40 cursor-not-allowed text-neutral-600" 
+                  : activeTab === "investigation"
+                    ? "bg-neutral-900 text-white border-l-2 border-emerald-500 pl-2.5"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
+              }`}
+            >
+              <Terminal className="h-4 w-4" />
+              Smart Investigation
             </button>
             <button
               onClick={() => setActiveTab("history")}
@@ -636,7 +671,54 @@ export default function Home() {
             </div>
           )}
 
-          {/* TAB 3: HISTORY */}
+          {/* TAB 3: ADVANCED ANALYTICS */}
+          {activeTab === "analytics" && sessionId && (
+            <div className="space-y-6">
+              <div className="bg-neutral-900/40 border border-neutral-900 rounded-xl p-5">
+                <h3 className="text-base font-bold text-white">Advanced Macro Analytics</h3>
+                <p className="text-xs text-neutral-400 mt-0.5">Deterministic operational insights across the reconciliation session.</p>
+              </div>
+              <AnalyticsDashboard sessionId={sessionId} />
+            </div>
+          )}
+
+          {/* TAB 4: SMART INVESTIGATION */}
+          {activeTab === "investigation" && sessionId && (
+            <div className="space-y-6">
+              <div className="bg-neutral-900/40 border border-neutral-900 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-white">Smart Investigation Workspace</h3>
+                  <p className="text-xs text-neutral-400 mt-0.5">Explore anomalies, merchant risk, and ask the AI Assistant.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a href={InvestigationApiService.getReportUrl(sessionId, "pdf")} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold hover:bg-rose-500 hover:text-black transition-all">
+                    PDF Report
+                  </a>
+                  <a href={InvestigationApiService.getReportUrl(sessionId, "xlsx")} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500 hover:text-black transition-all">
+                    XLSX Report
+                  </a>
+                  <a href={InvestigationApiService.getReportUrl(sessionId, "csv")} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold hover:bg-blue-500 hover:text-black transition-all">
+                    CSV Report
+                  </a>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                  <AnomalyPanel sessionId={sessionId} />
+                  <MerchantDatagrid sessionId={sessionId} />
+                </div>
+                <div className="lg:col-span-1">
+                  <AiChatAssistant sessionId={sessionId} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: HISTORY */}
           {activeTab === "history" && (
             <div className="space-y-6">
               <div className="bg-neutral-900/40 border border-neutral-900 rounded-xl p-5">

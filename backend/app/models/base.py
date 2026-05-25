@@ -91,4 +91,3 @@ def init_db(engine_obj) -> None:
     logger.info("Generating and compiling database schemas in target connection...")
     Base.metadata.create_all(bind=engine_obj)
     logger.info("Database base tables compiled successfully.")
-ZO=True

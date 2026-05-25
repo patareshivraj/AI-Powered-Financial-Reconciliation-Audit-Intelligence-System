@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { ReconciliationResult, ReconciliationApiService } from "../services/reconciliation-api";
 import { AiApiService, MismatchExplanation } from "../features/ai/services/ai-api";
 import { StatusBadge } from "./status-badge";
+import { AdvancedFilterPanel, FilterState, INITIAL_FILTERS } from "./advanced-filter-panel";
 import { 
   Search, 
   FileSpreadsheet, 
@@ -27,10 +28,9 @@ interface ReconciliationTableProps {
 }
 
 export function ReconciliationTable({ results, sessionId }: ReconciliationTableProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [currentPage, setCurrentPage] = useState(0);
-  const rowsPerPage = 10;
+  const rowsPerPage = 15;
 
   // AI Explanation Drawer states
   const [selectedResult, setSelectedResult] = useState<ReconciliationResult | null>(null);
@@ -38,138 +38,104 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
   const [aiData, setAiData] = useState<MismatchExplanation | null>(null);
   const [aiError, setAiError] = useState("");
 
-  // 1. Format Currency Helper
   const formatCurrency = (val: number | null | undefined) => {
     if (val === null || val === undefined) return "—";
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(val);
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
   };
 
-  // 2. Format Date Helper
   const formatDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return "—";
     try {
       const d = new Date(dateStr);
-      return d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }) + " " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    } catch {
-      return dateStr;
-    }
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) +
+        " " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    } catch { return dateStr; }
   };
 
-  // 3. Filtering logic
-  const filteredResults = results.filter((res) => {
-    const statusMatch = selectedStatus === "ALL" || res.status === selectedStatus;
-    
-    const bRef = res.bank_transaction?.reference || "";
-    const eRef = res.ledger_transaction?.reference || "";
-    const bDesc = res.bank_transaction?.description || "";
-    const eDesc = res.ledger_transaction?.description || "";
-    const remarks = res.remarks || "";
+  // Multi-dimensional filtering with memoization
+  const filteredResults = useMemo(() => {
+    return results.filter((res) => {
+      // Status filter
+      if (filters.status !== "ALL" && res.status !== filters.status) return false;
 
-    const matchesSearch = 
-      bRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bDesc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eDesc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      remarks.toLowerCase().includes(searchTerm.toLowerCase());
+      // Text search
+      if (filters.search) {
+        const term = filters.search.toLowerCase();
+        const fields = [
+          res.bank_transaction?.reference, res.ledger_transaction?.reference,
+          res.bank_transaction?.description, res.ledger_transaction?.description,
+          res.remarks
+        ].filter(Boolean).map(s => s!.toLowerCase());
+        if (!fields.some(f => f.includes(term))) return false;
+      }
 
-    return statusMatch && matchesSearch;
-  });
+      // Amount range
+      const amt = res.bank_transaction?.amount ?? res.ledger_transaction?.amount ?? null;
+      if (filters.minAmount && amt !== null && amt < parseFloat(filters.minAmount)) return false;
+      if (filters.maxAmount && amt !== null && amt > parseFloat(filters.maxAmount)) return false;
 
-  // 4. Pagination boundaries
+      // Date range
+      const dateStr = res.bank_transaction?.transaction_date ?? res.ledger_transaction?.transaction_date;
+      if (dateStr && (filters.dateFrom || filters.dateTo)) {
+        const txDate = new Date(dateStr).getTime();
+        if (filters.dateFrom && txDate < new Date(filters.dateFrom).getTime()) return false;
+        if (filters.dateTo && txDate > new Date(filters.dateTo + "T23:59:59").getTime()) return false;
+      }
+
+      return true;
+    });
+  }, [results, filters]);
+
+  // Pagination
   const totalRows = filteredResults.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const startIndex = currentPage * rowsPerPage;
   const paginatedRows = filteredResults.slice(startIndex, startIndex + rowsPerPage);
 
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 0 && newPage < totalPages) {
-      setCurrentPage(newPage);
-    }
+    if (newPage >= 0 && newPage < totalPages) setCurrentPage(newPage);
   };
 
-  // Trigger on-demand AI mismatch explanation
+  const handleFilterChange = useCallback((newFilters: FilterState) => {
+    setFilters(newFilters);
+    setCurrentPage(0);
+  }, []);
+
   const handleExplainDiscrepancy = async (result: ReconciliationResult) => {
     setSelectedResult(result);
     setAiLoading(true);
     setAiError("");
     setAiData(null);
-    
     try {
       const res = await AiApiService.explainMismatch(result.id);
-      if (res.success && res.data) {
-        setAiData(res.data);
-      } else {
-        setAiError(res.errors?.[0] || "Inference error occurred. Check settings.");
-      }
+      if (res.success && res.data) { setAiData(res.data); }
+      else { setAiError(res.errors?.[0] || "Inference error occurred."); }
     } catch (err: any) {
-      setAiError(err.message || "Failed communicating with Llama-3 compiler.");
-    } finally {
-      setAiLoading(false);
-    }
+      setAiError(err.message || "Failed communicating with Llama-3.");
+    } finally { setAiLoading(false); }
   };
 
   return (
     <div className="w-full space-y-4 relative">
       
-      {/* Search and Filters Banner */}
-      <div className="p-4 bg-slate-900/40 border border-slate-800 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 backdrop-blur-md">
-        {/* Search Input */}
-        <div className="relative max-w-md w-full">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-          <input
-            type="text"
-            placeholder="Search by reference, description, remarks..."
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}
-            className="w-full pl-9 pr-4 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-slate-700 font-sans font-medium"
-          />
-        </div>
+      {/* Smart Filtering Engine */}
+      <AdvancedFilterPanel
+        filters={filters}
+        onChange={handleFilterChange}
+        resultCount={totalRows}
+        totalCount={results.length}
+      />
 
-        {/* Filters and Exports */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Status filter dropdown */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(0); }}
-            className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none font-medium cursor-pointer"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="MATCHED">Matched</option>
-            <option value="PARTIAL_MATCH">Partial Matches</option>
-            <option value="AMOUNT_MISMATCH">Amount Mismatches</option>
-            <option value="DATE_MISMATCH">Date Mismatches</option>
-            <option value="MISSING_IN_BANK">Missing in Bank</option>
-            <option value="MISSING_IN_EXTERNAL">Missing in Ledger</option>
-            <option value="DUPLICATE">Duplicates</option>
-          </select>
-
-          {/* Export Buttons */}
-          <a
-            href={ReconciliationApiService.getExportUrl(sessionId, "csv")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold transition-colors"
-          >
-            <FileText className="h-3.5 w-3.5 text-blue-400" />
-            <span>Export CSV</span>
-          </a>
-          <a
-            href={ReconciliationApiService.getExportUrl(sessionId, "xlsx")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold transition-colors"
-          >
-            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Export XLSX</span>
-          </a>
-        </div>
+      {/* Export Buttons */}
+      <div className="flex items-center gap-2 justify-end">
+        <a href={ReconciliationApiService.getExportUrl(sessionId, "csv")} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold transition-colors">
+          <FileText className="h-3.5 w-3.5 text-blue-400" /> Export CSV
+        </a>
+        <a href={ReconciliationApiService.getExportUrl(sessionId, "xlsx")} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold transition-colors">
+          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-400" /> Export XLSX
+        </a>
       </div>
 
       {/* Main Table Card */}
