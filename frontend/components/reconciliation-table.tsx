@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { ReconciliationResult, ReconciliationApiService, MismatchExplanation } from "../services/reconciliation-api";
+import { ReconciliationResult, ReconciliationApiService } from "../services/reconciliation-api";
+import { AiApiService, MismatchExplanation } from "../features/ai/services/ai-api";
 import { StatusBadge } from "./status-badge";
 import { 
   Search, 
@@ -101,7 +102,7 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
     setAiData(null);
     
     try {
-      const res = await ReconciliationApiService.explainMismatch(result.id);
+      const res = await AiApiService.explainMismatch(result.id);
       if (res.success && res.data) {
         setAiData(res.data);
       } else {
@@ -407,23 +408,6 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
                     </p>
                   </div>
 
-                  {/* Predicted Ledger Class */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Suggested Ledger Allocation</h4>
-                    <div className="px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl w-fit font-mono font-bold text-xs text-emerald-400">
-                      {aiData.category_prediction}
-                    </div>
-                  </div>
-
-                  {/* Recommended Action steps */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <TrendingUp className="h-4 w-4 text-blue-400" /> Remediation Actions
-                    </h4>
-                    <p className="text-xs text-slate-300 leading-relaxed font-sans bg-slate-900/20 p-4 rounded-xl border border-slate-900/60">
-                      {aiData.suggested_action}
-                    </p>
-                  </div>
 
                   {/* Confidence indicators */}
                   <div className="pt-6 border-t border-slate-900 flex items-center justify-between text-xs">

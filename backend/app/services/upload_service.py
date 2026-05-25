@@ -1,6 +1,7 @@
 import os
 import uuid
 import shutil
+from typing import Optional
 from fastapi import UploadFile, HTTPException, status
 from app.core.config import settings
 from app.utils.logging import logger

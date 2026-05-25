@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.services.reconciliation_service import ReconciliationService
 from app.models.base import ReconciliationResult
-from app.integrations.groq.services import GroqIntelligenceService
+
 from app.schemas.reconciliation import (
     RunReconciliationResponse,
     ReconciliationResultSchema,
@@ -177,71 +177,4 @@ async def export_reconciliation_results(
     except Exception as e:
         logger.error(f"API Error generating export: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed compiling export report: {str(e)}")
-
-@router.get("/explain/{result_id}", response_model=StandardResponse)
-async def explain_transaction_mismatch(result_id: str, db: Session = Depends(get_db)):
-    """
-    On-demand endpoint: loads a discrepancy pairing and returns an assistive Llama-3 audit analysis of its root causes.
-    """
-    logger.info(f"API: Explaining transaction mismatch for result ID: {result_id}")
-    try:
-        res = db.query(ReconciliationResult).filter(ReconciliationResult.id == result_id).first()
-        if not res:
-            raise HTTPException(status_code=404, detail="Reconciliation result item not found")
-
-        bank_tx = res.bank_transaction
-        ledger_tx = res.ledger_transaction
-
-        # Invoke Groq Llama-3 async diagnostic service
-        explanation = await GroqIntelligenceService.explain_mismatch(bank_tx, ledger_tx)
-        
-        return StandardResponse(
-            success=True,
-            message="Assistive AI discrepancy explanation completed.",
-            data=explanation.model_dump(),
-            errors=[]
-        )
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        logger.error(f"API Error explaining mismatch {result_id}: {str(e)}")
-        return StandardResponse(
-            success=False,
-            message="AI discrepancy analysis failed.",
-            data=None,
-            errors=[str(e)]
-        )
-
-@router.get("/ai-summary/{session_id}", response_model=StandardResponse)
-async def generate_session_ai_summary(session_id: str, db: Session = Depends(get_db)):
-    """
-    Generates high-level, rate-limited summary observations and insights from mismatch trends and metrics.
-    """
-    logger.info(f"API: Generating AI dashboard insights for session: {session_id}")
-    try:
-        # Load raw counts
-        results = ReconciliationService.get_results(session_id, db)
-        summary = ReconciliationService.get_summary(session_id, db)
-
-        insights = await GroqIntelligenceService.generate_audit_insights(
-            total_bank_count=summary.total_bank_transactions,
-            total_external_count=summary.total_external_transactions,
-            matched_count=summary.matched_count,
-            results=results
-        )
-
-        return StandardResponse(
-            success=True,
-            message="Assistive AI executive observations generated.",
-            data=insights.model_dump(),
-            errors=[]
-        )
-    except Exception as e:
-        logger.error(f"API Error generating AI dashboard summary: {str(e)}")
-        return StandardResponse(
-            success=False,
-            message="AI dashboard insights generation failed.",
-            data=None,
-            errors=[str(e)]
-        )
 

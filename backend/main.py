@@ -13,7 +13,7 @@ from app.api.v1.health import router as health_router
 from app.api.v1.reconciliation import router as recon_router
 from app.api.v1.uploads import router as uploads_router
 from app.api.v1.preview import router as preview_router
-
+from app.api.v1.ai import router as ai_router
 # 1. Initialize FastAPI Application
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -51,7 +51,7 @@ app.include_router(health_router, prefix=f"{settings.API_V1_STR}/health", tags=[
 app.include_router(recon_router, prefix=f"{settings.API_V1_STR}/reconciliation", tags=["Reconciliation Workflows"])
 app.include_router(uploads_router, prefix=f"{settings.API_V1_STR}/uploads", tags=["Upload Operations"])
 app.include_router(preview_router, prefix=f"{settings.API_V1_STR}/preview", tags=["Data Previewers"])
-
+app.include_router(ai_router, prefix=f"{settings.API_V1_STR}/ai", tags=["AI Intelligence"])
 
 # 5. Startup Lifecycle Event: Auto-initialize storage structures and tables
 @app.on_event("startup")

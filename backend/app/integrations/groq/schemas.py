@@ -1,21 +1,24 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List
+
+class ReconciliationSummaryResponse(BaseModel):
+    summary: str = Field(description="A clear, human-readable summary of the reconciliation results.")
+    confidence_score: int = Field(ge=0, le=100)
+    confidence_indicator: str = Field(description="HIGH/MEDIUM/LOW")
 
 class MismatchExplanationResponse(BaseModel):
-    explanation: str = Field(description="Audit explanation of the discrepancy.")
-    category_prediction: str = Field(description="Operating transaction class prediction.")
-    suggested_action: str = Field(description="Remediation steps recommended for manual approval.")
-    confidence_score: int = Field(ge=0, le=100, description="Estimated inference accuracy score.")
-    confidence_indicator: str = Field(description="Quality level: HIGH, MEDIUM, LOW")
+    status: str = Field(description="The status of the mismatch (e.g., AMOUNT_MISMATCH, DATE_MISMATCH).")
+    explanation: str = Field(description="A non-authoritative explanation of the mismatch.")
+    confidence_score: int = Field(ge=0, le=100)
+    confidence_indicator: str = Field(description="HIGH/MEDIUM/LOW")
 
 class NarrationParsingResponse(BaseModel):
-    merchant_name: str = Field(description="Extracted merchant name.")
-    predicted_category: str = Field(description="Expense bookkeeping category.")
-    cleaned_narration: str = Field(description="Prettified transaction detail narration.")
-    confidence_score: int = Field(ge=0, le=100, description="Estimated accuracy score.")
-
-class ReconciliationSummaryInsightResponse(BaseModel):
-    observations: str = Field(description="Overall matching review and trend observations.")
-    insights: List[str] = Field(description="Curated list of operational or structural findings.")
+    merchant: str = Field(description="Extracted clean vendor/merchant name.")
+    category: str = Field(description="Expense bookkeeping category.")
+    payment_mode: str = Field(description="Extracted payment mode.")
     confidence_score: int = Field(ge=0, le=100)
-    confidence_indicator: str
+
+class OperationalInsightsResponse(BaseModel):
+    insights: List[str] = Field(description="List of operational insights found in the data.")
+    confidence_score: int = Field(ge=0, le=100)
+    confidence_indicator: str = Field(description="HIGH/MEDIUM/LOW")

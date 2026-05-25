@@ -42,20 +42,7 @@ export interface RunReconciliationResponse {
   summary: ReconciliationSummary;
 }
 
-export interface MismatchExplanation {
-  explanation: string;
-  category_prediction: string;
-  suggested_action: string;
-  confidence_score: number;
-  confidence_indicator: string;
-}
 
-export interface ReconciliationAiSummary {
-  observations: string;
-  insights: string[];
-  confidence_score: number;
-  confidence_indicator: string;
-}
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
@@ -99,27 +86,6 @@ export class ReconciliationApiService {
     return res.json();
   }
 
-  /**
-   * Generates or fetches an assistive AI breakdown explanation of a discrepant transaction.
-   */
-  static async explainMismatch(resultId: string): Promise<StandardResponse<MismatchExplanation>> {
-    const res = await fetch(`${API_BASE_URL}/reconciliation/explain/${resultId}`);
-    if (!res.ok) {
-      throw new Error(`Failed explaining discrepancy with status code ${res.status}`);
-    }
-    return res.json();
-  }
-
-  /**
-   * Generates or fetches rate-limited high-level AI dashboard insights and audit summaries.
-   */
-  static async getAiSummary(sessionId: string): Promise<StandardResponse<ReconciliationAiSummary>> {
-    const res = await fetch(`${API_BASE_URL}/reconciliation/ai-summary/${sessionId}`);
-    if (!res.ok) {
-      throw new Error(`Failed retrieving AI insights with status code ${res.status}`);
-    }
-    return res.json();
-  }
 
   /**
    * Computes the download URL for exporting results as CSV or Excel sheets.

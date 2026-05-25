@@ -37,7 +37,8 @@ import { UploadApiService } from "../services/upload-api";
 import { SessionPreviewResponse } from "../types/upload";
 
 // Import custom Phase 2 UI components & services
-import { ReconciliationApiService, ReconciliationSummary, ReconciliationResult, ReconciliationAiSummary } from "../services/reconciliation-api";
+import { ReconciliationApiService, ReconciliationSummary, ReconciliationResult } from "../services/reconciliation-api";
+import { AiApiService, ReconciliationAiSummary } from "../features/ai/services/ai-api";
 import { ReconciliationSummaryCards } from "../components/reconciliation-summary-cards";
 import { ReconciliationTable } from "../components/reconciliation-table";
 
@@ -173,7 +174,7 @@ export default function Home() {
     setAiSummaryError("");
     setAiSummary(null);
     try {
-      const res = await ReconciliationApiService.getAiSummary(sessionId);
+      const res = await AiApiService.getAiSummary(sessionId);
       if (res.success && res.data) {
         setAiSummary(res.data);
       } else {
@@ -513,19 +514,7 @@ export default function Home() {
                       <div className="space-y-6">
                         {/* Summary review description */}
                         <div className="p-4 bg-neutral-950/80 rounded-xl border border-neutral-900/60 text-xs text-neutral-300 leading-relaxed font-sans">
-                          {aiSummary.observations}
-                        </div>
-
-                        {/* Visual checklist/diagnostic grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {aiSummary.insights.map((ins, index) => (
-                            <div key={index} className="p-4 bg-slate-900/20 border border-slate-900 rounded-xl flex gap-3 text-xs">
-                              <span className="h-5 w-5 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-[10px] shrink-0">
-                                0{index + 1}
-                              </span>
-                              <span className="text-neutral-400 leading-relaxed font-sans">{ins}</span>
-                            </div>
-                          ))}
+                          {aiSummary.summary}
                         </div>
 
                         {/* Footer indicators and confidence levels */}
