@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.services.reconciliation_service import ReconciliationService
-from app.models.base import ReconciliationResult
+from app.services.audit_service import AuditService
+from app.models.base import ReconciliationResult, User
+from app.core.auth import require_admin, require_analyst_or_admin, require_any_role
+from app.db.session import SessionLocal
 
 from app.schemas.reconciliation import (
     RunReconciliationResponse,
@@ -18,18 +21,36 @@ import io
 
 router = APIRouter(tags=["Reconciliation"])
 
-@router.post("/run/{session_id}", response_model=StandardResponse)
-async def run_reconciliation(session_id: str, db: Session = Depends(get_db)):
-    """
-    Executes the rule-based matching engine on parsed bank and external transactions.
-    """
-    logger.info(f"API: Running reconciliation for session: {session_id}")
+def run_reconciliation_bg_task(session_id: str, org_id: str, actor_id: str):
+    """Background task wrapper for reconciliation to manage its own db session."""
+    db: Session = SessionLocal()
     try:
-        data = ReconciliationService.run_reconciliation(session_id, db)
+        ReconciliationService.run_reconciliation(session_id, db)
+        AuditService.log_action(db, org_id, "RUN_RECONCILIATION", actor_id, "SESSION", session_id)
+    except Exception as e:
+        logger.error(f"Background reconciliation failed for {session_id}: {e}")
+    finally:
+        db.close()
+
+@router.post("/run/{session_id}", response_model=StandardResponse)
+async def run_reconciliation(
+    session_id: str, 
+    background_tasks: BackgroundTasks, 
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin) # Only Admins can trigger hard reconciliations
+):
+    """
+    Executes the rule-based matching engine on parsed bank and external transactions in the background.
+    """
+    logger.info(f"API: Queueing background reconciliation for session: {session_id}")
+    try:
+        # Queue the job
+        background_tasks.add_task(run_reconciliation_bg_task, session_id, user.organization_id, user.id)
+        
         return StandardResponse(
             success=True,
-            message="Reconciliation pipeline completed successfully.",
-            data=data,
+            message="Reconciliation pipeline queued in background successfully.",
+            data={"session_id": session_id, "status": "PROCESSING"},
             errors=[]
         )
     except HTTPException as he:
@@ -91,7 +112,11 @@ async def get_reconciliation_results(session_id: str, db: Session = Depends(get_
         )
 
 @router.get("/summary/{session_id}", response_model=StandardResponse)
-async def get_reconciliation_summary(session_id: str, db: Session = Depends(get_db)):
+async def get_reconciliation_summary(
+    session_id: str, 
+    db: Session = Depends(get_db),
+    user: User = Depends(require_any_role)
+):
     """
     Computes/fetches the high-level match efficiency indicators.
     """

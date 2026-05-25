@@ -1,6 +1,6 @@
 import { StandardResponse, UploadDataResponse, SessionPreviewResponse } from "../types/upload";
 
-const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+import { api } from "./api-client";
 
 export class UploadApiService {
   /**
@@ -17,17 +17,12 @@ export class UploadApiService {
       formData.append("session_id", sessionId);
     }
 
-    const response = await fetch(`${API_BASE_URL}/uploads/bank-statement`, {
-      method: "POST",
-      body: formData,
+    const res = await api.post("/uploads/bank-statement", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
     });
-
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      throw new Error(errBody.errors?.[0] || "Failed to upload bank statement.");
-    }
-
-    return response.json();
+    return res.data;
   }
 
   /**
@@ -44,17 +39,12 @@ export class UploadApiService {
       formData.append("session_id", sessionId);
     }
 
-    const response = await fetch(`${API_BASE_URL}/uploads/external-transactions`, {
-      method: "POST",
-      body: formData,
+    const res = await api.post("/uploads/external-transactions", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
     });
-
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      throw new Error(errBody.errors?.[0] || "Failed to upload external ledger transactions.");
-    }
-
-    return response.json();
+    return res.data;
   }
 
   /**
@@ -63,13 +53,7 @@ export class UploadApiService {
   static async getSessionPreview(
     sessionId: string
   ): Promise<StandardResponse<SessionPreviewResponse>> {
-    const response = await fetch(`${API_BASE_URL}/preview/${sessionId}`);
-
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      throw new Error(errBody.errors?.[0] || "Failed to retrieve session preview.");
-    }
-
-    return response.json();
+    const res = await api.get(`/preview/${sessionId}`);
+    return res.data;
   }
 }

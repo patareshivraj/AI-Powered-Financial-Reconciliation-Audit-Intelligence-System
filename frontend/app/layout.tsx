@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Fintech-grade AI-powered financial reconciliation platform.",
 };
 
+import { SimulationLoginOverlay } from "@/features/auth/components/simulation-login";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +30,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
       <body className="h-full bg-neutral-950 text-neutral-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
-        {children}
+        <SimulationLoginOverlay>
+          {children}
+        </SimulationLoginOverlay>
       </body>
     </html>
   );

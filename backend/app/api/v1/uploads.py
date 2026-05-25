@@ -5,7 +5,8 @@ import os
 from app.db.session import get_db
 from app.services.upload_service import UploadService
 from app.schemas.upload import StandardResponse, UploadDataResponse
-from app.models.base import ReconciliationSession
+from app.models.base import ReconciliationSession, User
+from app.core.auth import require_analyst_or_admin
 from app.utils.logging import logger
 
 router = APIRouter()
@@ -14,7 +15,8 @@ def sync_session_record(
     db: Session,
     session_id: str,
     filename: str,
-    file_type: str
+    file_type: str,
+    user: User
 ) -> ReconciliationSession:
     """
     Looks up or initializes a ReconciliationSession record in the database.
@@ -27,7 +29,8 @@ def sync_session_record(
         session_record = ReconciliationSession(
             id=session_id,
             session_name=f"Session — {session_id[:8].upper()}",
-            status="INIT"
+            status="INIT",
+            organization_id=user.organization_id
         )
         db.add(session_record)
         
@@ -55,7 +58,8 @@ def sync_session_record(
 async def upload_bank_statement(
     file: UploadFile = File(...),
     session_id: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(require_analyst_or_admin)
 ):
     """
     Endpoint for uploading a bank statement.
@@ -71,7 +75,7 @@ async def upload_bank_statement(
         )
         
         # 2. Track in database
-        sync_session_record(db, resolved_session_id, file.filename, "BANK_STATEMENT")
+        sync_session_record(db, resolved_session_id, file.filename, "BANK_STATEMENT", user)
         
         file_size_kb = os.path.getsize(saved_path) / 1024.0
         
@@ -105,7 +109,8 @@ async def upload_bank_statement(
 async def upload_external_transactions(
     file: UploadFile = File(...),
     session_id: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(require_analyst_or_admin)
 ):
     """
     Endpoint for uploading an external ledger/ERP/payment gateway transaction file.
@@ -121,7 +126,7 @@ async def upload_external_transactions(
         )
         
         # 2. Track in database
-        sync_session_record(db, resolved_session_id, file.filename, "EXTERNAL_LEDGER")
+        sync_session_record(db, resolved_session_id, file.filename, "EXTERNAL_LEDGER", user)
         
         file_size_kb = os.path.getsize(saved_path) / 1024.0
         

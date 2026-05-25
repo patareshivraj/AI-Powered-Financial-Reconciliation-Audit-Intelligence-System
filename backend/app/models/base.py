@@ -20,10 +20,52 @@ class TimestampMixin:
         server_default=text("CURRENT_TIMESTAMP")
     )
 
+class Organization(Base, TimestampMixin):
+    __tablename__ = "organizations"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(100), nullable=False)
+    
+    # Relationships
+    users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
+    sessions = relationship("ReconciliationSession", back_populates="organization", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", back_populates="organization", cascade="all, delete-orphan")
+
+class User(Base, TimestampMixin):
+    __tablename__ = "users"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    full_name = Column(String(100), nullable=True)
+    role = Column(String(50), default="ANALYST", nullable=False)  # ADMIN, ANALYST, AUDITOR
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    # Relationships
+    organization = relationship("Organization", back_populates="users")
+    audit_logs = relationship("AuditLog", back_populates="actor")
+
+class AuditLog(Base, TimestampMixin):
+    __tablename__ = "audit_logs"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    actor_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = Column(String(100), nullable=False)  # e.g., UPLOAD_FILE, RUN_RECONCILIATION, AI_QUERY
+    entity_type = Column(String(50), nullable=True) # e.g., SESSION, TRANSACTION, USER
+    entity_id = Column(String(36), nullable=True)
+    metadata_json = Column(String(1000), nullable=True) # stringified json metadata
+
+    # Relationships
+    organization = relationship("Organization", back_populates="audit_logs")
+    actor = relationship("User", back_populates="audit_logs")
+
 class ReconciliationSession(Base, TimestampMixin):
     __tablename__ = "reconciliation_sessions"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True) # Nullable for backward compatibility during migration, should be enforced later
     session_name = Column(String(100), nullable=False)
     status = Column(String(50), default="INIT", nullable=False)  # INIT, PARSING, MATCHING, COMPLETED, FAILED
     bank_file_name = Column(String(255), nullable=True)
@@ -36,6 +78,7 @@ class ReconciliationSession(Base, TimestampMixin):
     mismatched_records = Column(Integer, default=0)
 
     # Relationships
+    organization = relationship("Organization", back_populates="sessions")
     transactions = relationship("Transaction", back_populates="session", cascade="all, delete-orphan")
     matches = relationship("ReconciliationResult", back_populates="session", cascade="all, delete-orphan")
 

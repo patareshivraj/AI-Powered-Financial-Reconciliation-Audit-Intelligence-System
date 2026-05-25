@@ -292,22 +292,43 @@ export default function Home() {
         </div>
 
         {/* Database Status Footer Info */}
-        <div className="p-3 bg-neutral-900/40 rounded-xl border border-neutral-900 space-y-2">
-          <div className="flex items-center justify-between text-xs text-neutral-400">
-            <span className="flex items-center gap-1.5 font-medium">
-              <Database className="h-3 w-3 text-neutral-400" /> Database
-            </span>
-            <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px]">
-              Local SQLite
-            </span>
+        <div className="space-y-3">
+          <div className="p-3 bg-neutral-900/40 rounded-xl border border-neutral-900 space-y-2">
+            <div className="flex items-center justify-between text-xs text-neutral-400">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Database className="h-3 w-3 text-neutral-400" /> Database
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px]">
+                ONLINE
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-neutral-400">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Terminal className="h-3 w-3 text-neutral-400" /> Pipeline
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px]">
+                LOCAL
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-xs text-neutral-400">
-            <span className="flex items-center gap-1.5 font-medium">
-              <Activity className="h-3 w-3 text-neutral-400" /> Platform Mode
-            </span>
-            <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono text-[10px]">
-              Deterministic
-            </span>
+          
+          <div className="p-3 bg-neutral-900 rounded-xl border border-neutral-800 flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Simulated Role</span>
+              <span className="text-xs font-mono text-emerald-400 font-semibold mt-0.5">
+                {typeof window !== 'undefined' ? localStorage.getItem('bank_ai_role') || 'UNKNOWN' : 'LOADING'}
+              </span>
+            </div>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('bank_ai_token');
+                localStorage.removeItem('bank_ai_role');
+                window.location.reload();
+              }}
+              className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500 hover:text-white text-red-400 text-xs font-semibold transition-colors"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </aside>
@@ -691,18 +712,31 @@ export default function Home() {
                   <p className="text-xs text-neutral-400 mt-0.5">Explore anomalies, merchant risk, and ask the AI Assistant.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a href={InvestigationApiService.getReportUrl(sessionId, "pdf")} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold hover:bg-rose-500 hover:text-black transition-all">
-                    PDF Report
-                  </a>
-                  <a href={InvestigationApiService.getReportUrl(sessionId, "xlsx")} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500 hover:text-black transition-all">
-                    XLSX Report
-                  </a>
-                  <a href={InvestigationApiService.getReportUrl(sessionId, "csv")} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold hover:bg-blue-500 hover:text-black transition-all">
-                    CSV Report
-                  </a>
+
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2"
+                    onClick={() => InvestigationApiService.downloadExport(sessionId, "pdf")}
+                  >
+                    <Download className="h-4 w-4" /> Download PDF
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2"
+                    onClick={() => InvestigationApiService.downloadExport(sessionId, "xlsx")}
+                  >
+                    <Download className="h-4 w-4" /> Download Excel
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2"
+                    onClick={() => InvestigationApiService.downloadExport(sessionId, "csv")}
+                  >
+                    <Download className="h-4 w-4" /> Download CSV
+                  </Button>
                 </div>
               </div>
               
