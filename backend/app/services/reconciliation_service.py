@@ -14,6 +14,7 @@ from datetime import datetime
 from app.core.config import settings
 from app.services.parser_service import ParserService
 from app.services.normalizer_service import NormalizerService
+import uuid
 
 class ReconciliationService:
     @staticmethod
@@ -46,18 +47,29 @@ class ReconciliationService:
                 if not matches: return
                 raw_df = ParserService.parse_file(matches[0])
                 normalized_df = NormalizerService.normalize_dataframe(raw_df, source_type)
-                txs = []
-                for _, row in normalized_df.iterrows():
-                    dt = pd.to_datetime(row.get('date')) if pd.notna(row.get('date')) else datetime.utcnow()
-                    txs.append(Transaction(
-                        session_id=session_id,
-                        source_type=source_type,
-                        transaction_date=dt,
-                        amount=float(row.get('amount', 0.0)) if pd.notna(row.get('amount')) else 0.0,
-                        reference=str(row.get('reference_id')) if pd.notna(row.get('reference_id')) else None,
-                        description=str(row.get('description')) if pd.notna(row.get('description')) else None
-                    ))
-                db.add_all(txs)
+                
+                # Replace pandas NaN/NaT with None for SQL insert
+                normalized_df = normalized_df.where(pd.notna(normalized_df), None)
+                records = normalized_df.to_dict(orient="records")
+                
+                mappings = []
+                now = datetime.utcnow()
+                for r in records:
+                    dt = pd.to_datetime(r.get('date')) if r.get('date') is not None else now
+                    if isinstance(dt, pd.Timestamp):
+                        dt = dt.to_pydatetime()
+                    mappings.append({
+                        "id": str(uuid.uuid4()),
+                        "session_id": session_id,
+                        "source_type": source_type,
+                        "transaction_date": dt,
+                        "amount": float(r.get('amount')) if r.get('amount') is not None else 0.0,
+                        "reference": str(r.get('reference_id')) if r.get('reference_id') is not None else None,
+                        "description": str(r.get('description')) if r.get('description') is not None else None,
+                        "created_at": now,
+                        "updated_at": now
+                    })
+                db.bulk_insert_mappings(Transaction, mappings)
                 db.commit()
 
             load_source("bank_statement", "BANK_STATEMENT")
