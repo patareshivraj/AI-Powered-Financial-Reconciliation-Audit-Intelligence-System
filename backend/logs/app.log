@@ -1,0 +1,25 @@
+[2026-05-25 11:17:59,979] [INFO] [bank_ai] [logging.py:46] - Structured logging framework initialized successfully.
+[2026-05-25 11:18:04,380] [INFO] [bank_ai] [session.py:17] - Initializing database engine connected to: sqlite:///./app.db
+[2026-05-25 11:18:05,164] [INFO] [bank_ai] [logging.py:46] - Structured logging framework initialized successfully.
+[2026-05-25 11:18:05,464] [INFO] [bank_ai] [session.py:17] - Initializing database engine connected to: sqlite:///./app.db
+[2026-05-25 11:18:05,579] [INFO] [bank_ai] [main.py:54] - Triggering platform startup diagnostics...
+[2026-05-25 11:18:05,584] [INFO] [bank_ai] [upload.py:21] - Creating missing directory pathway: ./uploads
+[2026-05-25 11:18:05,584] [INFO] [bank_ai] [upload.py:21] - Creating missing directory pathway: ./reports
+[2026-05-25 11:18:19,230] [INFO] [bank_ai] [logging.py:46] - Structured logging framework initialized successfully.
+[2026-05-25 11:18:19,550] [INFO] [bank_ai] [session.py:17] - Initializing database engine connected to: sqlite:///./app.db
+[2026-05-25 11:18:19,658] [INFO] [bank_ai] [main.py:54] - Triggering platform startup diagnostics...
+[2026-05-25 11:18:19,658] [INFO] [bank_ai] [base.py:91] - Generating and compiling database schemas in target connection...
+[2026-05-25 11:18:19,714] [INFO] [bank_ai] [base.py:93] - Database base tables compiled successfully.
+[2026-05-25 11:18:19,715] [INFO] [bank_ai] [main.py:62] - BANK AI Platform boot cycle finished successfully. Online.
+[2026-05-25 11:18:22,588] [INFO] [bank_ai] [logging.py:46] - Structured logging framework initialized successfully.
+[2026-05-25 11:18:22,889] [INFO] [bank_ai] [session.py:17] - Initializing database engine connected to: sqlite:///./app.db
+[2026-05-25 11:18:23,596] [INFO] [bank_ai] [logging.py:46] - Structured logging framework initialized successfully.
+[2026-05-25 11:18:23,946] [INFO] [bank_ai] [session.py:17] - Initializing database engine connected to: sqlite:///./app.db
+[2026-05-25 11:18:24,047] [INFO] [bank_ai] [main.py:54] - Triggering platform startup diagnostics...
+[2026-05-25 11:18:24,047] [INFO] [bank_ai] [base.py:91] - Generating and compiling database schemas in target connection...
+[2026-05-25 11:18:24,049] [INFO] [bank_ai] [base.py:93] - Database base tables compiled successfully.
+[2026-05-25 11:18:24,049] [INFO] [bank_ai] [main.py:62] - BANK AI Platform boot cycle finished successfully. Online.
+[2026-05-25 11:18:37,614] [INFO] [bank_ai] [reconciliation.py:21] - Initializing new reconciliation session record: Test Integration Session
+[2026-05-25 11:18:41,638] [INFO] [bank_ai] [reconciliation.py:48] - Listing all historical reconciliation audit sessions.
+[2026-05-25 11:22:23,385] [INFO] [bank_ai] [logging.py:46] - Structured logging framework initialized successfully.
+[2026-05-25 11:22:23,774] [INFO] [bank_ai] [session.py:17] - Initializing database engine connected to: sqlite:///./app.db

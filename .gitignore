@@ -1,0 +1,32 @@
+# Python virtual environments & caching
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Backend specific sandboxes
+backend/uploads/
+uploads/
+*.db
+*.sqlite3
+
+# Node & Next.js production builds
+node_modules/
+.next/
+out/
+build/
+.docusaurus/
+
+# Environment configurations
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
