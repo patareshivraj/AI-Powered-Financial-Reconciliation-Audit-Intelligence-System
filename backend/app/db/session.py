@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import StaticPool
 from typing import Generator
@@ -8,7 +8,7 @@ from app.utils.logging import logger
 # Configure connection arguments for SQLite compatibility (thread-safety checks bypass)
 connect_args = {}
 if settings.DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+    connect_args = {"check_same_thread": False, "timeout": 30}
     # If in-memory database is specified, use static pool
     if ":memory:" in settings.DATABASE_URL:
         connect_args["poolclass"] = StaticPool
@@ -20,6 +20,15 @@ engine = create_engine(
     connect_args=connect_args,
     echo=False  # Set to True to log raw SQL queries during debug cycles
 )
+
+if settings.DATABASE_URL.startswith("sqlite"):
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.close()
 
 # Thread-local session maker
 SessionLocal = sessionmaker(
