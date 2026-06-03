@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     
     # Groq AI Settings (Phase 3 Activation)
     GROQ_API_KEY: str = Field(default="", description="Groq AI API authorization token.")
-    GROQ_MODEL: str = Field(default="llama3-70b-8192", description="Target Llama Groq Model.")
+    GROQ_MODEL: str = Field(default="llama-3.3-70b-versatile", description="Target Llama Groq Model.")
     
     # Auth & Environment
     ENVIRONMENT: str = Field(default="local", description="Deployment environment")
