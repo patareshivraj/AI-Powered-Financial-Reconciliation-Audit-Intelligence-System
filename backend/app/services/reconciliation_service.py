@@ -55,17 +55,23 @@ class ReconciliationService:
                 mappings = []
                 now = datetime.utcnow()
                 for r in records:
-                    dt = pd.to_datetime(r.get('date')) if r.get('date') is not None else now
+                    date_val = r.get('date')
+                    dt = pd.to_datetime(date_val) if pd.notna(date_val) else now
                     if isinstance(dt, pd.Timestamp):
                         dt = dt.to_pydatetime()
+                        
+                    ref_val = r.get('reference_id')
+                    desc_val = r.get('description')
+                    amt_val = r.get('amount')
+                    
                     mappings.append({
                         "id": str(uuid.uuid4()),
                         "session_id": session_id,
                         "source_type": source_type,
                         "transaction_date": dt,
-                        "amount": float(r.get('amount')) if r.get('amount') is not None else 0.0,
-                        "reference": str(r.get('reference_id')) if r.get('reference_id') is not None else None,
-                        "description": str(r.get('description')) if r.get('description') is not None else None,
+                        "amount": float(amt_val) if pd.notna(amt_val) else 0.0,
+                        "reference": str(ref_val).strip() if pd.notna(ref_val) else None,
+                        "description": str(desc_val).strip() if pd.notna(desc_val) else None,
                         "created_at": now,
                         "updated_at": now
                     })

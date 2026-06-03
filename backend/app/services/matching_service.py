@@ -67,8 +67,8 @@ class MatchingService:
                         if e_tx.id in matched_external_ids:
                             continue
 
-                        # Check amount match
-                        amounts_match = abs(round(b_tx.amount, 2) - abs(round(e_tx.amount, 2))) < 0.01
+                        # Check amount match (absolute comparison to handle signed deposits/withdrawals)
+                        amounts_match = abs(abs(round(b_tx.amount, 2)) - abs(round(e_tx.amount, 2))) < 0.01
                         
                         # Check date match (ignoring hours/minutes if it is a general day match)
                         b_date = b_tx.transaction_date.date()

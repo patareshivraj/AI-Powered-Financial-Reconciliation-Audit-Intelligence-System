@@ -64,7 +64,10 @@ BANK_COLUMN_MAPPINGS = {
         "remarks",
         "transaction_details",
         "payee",
-        "details"
+        "details",
+        "merchant",
+        "merchant_name",
+        "entity"
     ],
     "transaction_type": [
         "transaction_type",
