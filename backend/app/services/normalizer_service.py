@@ -22,6 +22,11 @@ class NormalizerService:
         # Make a copy to avoid mutating the original
         work_df = df.copy()
         
+        # 0. Pre-process: Detect and merge split debit/credit amount columns
+        #    Many bank statements use separate debit_amount/credit_amount columns
+        #    instead of a single 'amount' column. We must merge them before mapping.
+        work_df = cls._merge_split_amounts(work_df)
+        
         # 1. Map columns using synonyms whitelists
         mapped_cols = cls._map_headers(work_df.columns.tolist())
         work_df.rename(columns=mapped_cols, inplace=True)
@@ -49,6 +54,59 @@ class NormalizerService:
         
         logger.info(f"DataFrame normalized successfully. Columns mapped: {mapped_cols}")
         return canonical_df
+
+    @staticmethod
+    def _merge_split_amounts(df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Detects when a file uses split debit/credit columns instead of a unified 'amount' column.
+        Merges them into a single 'amount' column: amount = debit + credit (filling NaN with 0).
+        
+        Common patterns detected:
+        - debit_amount / credit_amount
+        - debit / credit
+        - withdrawal / deposit
+        - dr_amount / cr_amount
+        """
+        col_lower_map = {c.strip().lower().replace(" ", "_").replace("-", "_"): c for c in df.columns}
+        
+        # Check if a clean 'amount' column already exists — if so, no merging needed
+        if 'amount' in col_lower_map:
+            return df
+        
+        # Define known debit/credit column pairs
+        debit_synonyms = ['debit_amount', 'debit', 'withdrawal', 'dr_amount', 'withdrawals']
+        credit_synonyms = ['credit_amount', 'credit', 'deposit', 'cr_amount', 'deposits']
+        
+        debit_col = None
+        credit_col = None
+        
+        for syn in debit_synonyms:
+            if syn in col_lower_map:
+                debit_col = col_lower_map[syn]
+                break
+                
+        for syn in credit_synonyms:
+            if syn in col_lower_map:
+                credit_col = col_lower_map[syn]
+                break
+        
+        if debit_col and credit_col:
+            logger.info(f"Detected split amount columns: debit='{debit_col}', credit='{credit_col}'. Merging into unified 'amount'.")
+            df[debit_col] = pd.to_numeric(df[debit_col], errors='coerce').fillna(0.0)
+            df[credit_col] = pd.to_numeric(df[credit_col], errors='coerce').fillna(0.0)
+            df['amount'] = df[debit_col] + df[credit_col]
+            # Drop the original split columns to prevent them from winning synonym mapping
+            df = df.drop(columns=[debit_col, credit_col])
+        elif debit_col and not credit_col:
+            logger.info(f"Detected single debit column: '{debit_col}'. Using as 'amount'.")
+            df['amount'] = pd.to_numeric(df[debit_col], errors='coerce').fillna(0.0)
+            df = df.drop(columns=[debit_col])
+        elif credit_col and not debit_col:
+            logger.info(f"Detected single credit column: '{credit_col}'. Using as 'amount'.")
+            df['amount'] = pd.to_numeric(df[credit_col], errors='coerce').fillna(0.0)
+            df = df.drop(columns=[credit_col])
+        
+        return df
 
     @staticmethod
     def _map_headers(columns: List[str]) -> Dict[str, str]:
