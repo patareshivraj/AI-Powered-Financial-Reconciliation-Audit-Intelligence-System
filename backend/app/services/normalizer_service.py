@@ -27,6 +27,11 @@ class NormalizerService:
         #    instead of a single 'amount' column. We must merge them before mapping.
         work_df = cls._merge_split_amounts(work_df)
         
+        # 0b. Pre-process: Resolve column conflicts when multiple columns compete
+        #     for the same canonical key (e.g. transaction_date vs settlement_date,
+        #     merchant_name vs narration). Prefer the higher-priority column.
+        work_df = cls._resolve_column_conflicts(work_df)
+        
         # 1. Map columns using synonyms whitelists
         mapped_cols = cls._map_headers(work_df.columns.tolist())
         work_df.rename(columns=mapped_cols, inplace=True)
@@ -105,6 +110,58 @@ class NormalizerService:
             logger.info(f"Detected single credit column: '{credit_col}'. Using as 'amount'.")
             df['amount'] = pd.to_numeric(df[credit_col], errors='coerce').fillna(0.0)
             df = df.drop(columns=[credit_col])
+        
+        return df
+
+    @staticmethod
+    def _resolve_column_conflicts(df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Resolves conflicts when multiple CSV columns compete for the same canonical key.
+        
+        In banking datasets, it's common to have:
+        - Both 'transaction_date' and 'settlement_date' → prefer transaction_date for date
+        - Both 'merchant_name' and 'narration' → prefer merchant_name for description
+        
+        Without this step, whichever column appears first in CSV column order wins,
+        which often produces incorrect mappings.
+        """
+        col_lower_map = {c.strip().lower().replace(" ", "_").replace("-", "_"): c for c in df.columns}
+        
+        # --- Date conflict: transaction_date vs settlement_date ---
+        # In real banking, transaction_date is the actual event date.
+        # settlement_date can be days/months later. For matching, we need transaction_date.
+        has_transaction_date = 'transaction_date' in col_lower_map
+        has_settlement_date = 'settlement_date' in col_lower_map
+        has_value_date = 'value_date' in col_lower_map
+        
+        if has_transaction_date and has_settlement_date:
+            settle_col = col_lower_map['settlement_date']
+            logger.info(f"Date conflict resolved: dropping '{settle_col}' in favor of 'transaction_date'.")
+            df = df.drop(columns=[settle_col])
+        
+        if has_transaction_date and has_value_date:
+            value_col = col_lower_map['value_date']
+            logger.info(f"Date conflict resolved: dropping '{value_col}' in favor of 'transaction_date'.")
+            df = df.drop(columns=[value_col])
+        
+        # Rebuild col_lower_map after potential drops
+        col_lower_map = {c.strip().lower().replace(" ", "_").replace("-", "_"): c for c in df.columns}
+        
+        # --- Description conflict: merchant_name vs narration/narrative ---
+        # merchant_name is clean ("AMAZON"), narration is verbose ("NEFT-UTR123-AMAZON").
+        # For merchant intelligence, prefer merchant_name when available.
+        has_merchant = 'merchant_name' in col_lower_map or 'merchant' in col_lower_map
+        has_narration = 'narration' in col_lower_map
+        has_narrative = 'narrative' in col_lower_map
+        
+        if has_merchant and has_narration:
+            narr_col = col_lower_map['narration']
+            logger.info(f"Description conflict resolved: dropping '{narr_col}' in favor of 'merchant_name'.")
+            df = df.drop(columns=[narr_col])
+        elif has_merchant and has_narrative:
+            narr_col = col_lower_map['narrative']
+            logger.info(f"Description conflict resolved: dropping '{narr_col}' in favor of 'merchant_name'.")
+            df = df.drop(columns=[narr_col])
         
         return df
 
