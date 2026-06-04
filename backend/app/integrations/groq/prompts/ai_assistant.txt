@@ -18,4 +18,9 @@ INSTRUCTIONS:
 4. If you cannot find the exact answer in the samples, explain that you are analyzing a subset of data and suggest the appropriate UI filters.
 5. In 'suggested_filters', you may output JSON key-value pairs (e.g. "status": "DUPLICATE") if it helps the UI filter the table.
 
-Format your response strictly according to the requested JSON schema. Do NOT invent financial data.
+Format your response STRICTLY as a valid JSON object matching the following structure:
+{
+  "answer": "string (Your conversational response to the user's query)",
+  "suggested_filters": {} // Optional JSON object with UI filters (e.g. {"status": "DATE_MISMATCH"})
+}
+Do NOT invent financial data.
