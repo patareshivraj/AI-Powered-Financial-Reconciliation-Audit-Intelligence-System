@@ -52,3 +52,13 @@ async def get_anomalies(session_id: str, db: Session = Depends(get_db)):
         logger.error(f"API Error fetching anomalies: {str(e)}")
         return StandardResponse(success=False, message="Failed fetching anomalies.", data=None, errors=[str(e)])
 
+@router.get("/merchant-deepdive/{session_id}", response_model=StandardResponse)
+async def get_merchant_deepdive(session_id: str, merchant: str, db: Session = Depends(get_db)):
+    """Fetches detailed transactions for a specific merchant."""
+    try:
+        data = MerchantIntelligenceService.get_merchant_deepdive(db, session_id, merchant)
+        return StandardResponse(success=True, message="Merchant deep dive retrieved.", data=data, errors=[])
+    except Exception as e:
+        logger.error(f"API Error fetching merchant deep dive: {str(e)}")
+        return StandardResponse(success=False, message="Failed fetching merchant deep dive.", data=None, errors=[str(e)])
+

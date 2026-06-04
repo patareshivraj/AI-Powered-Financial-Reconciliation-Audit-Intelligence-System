@@ -25,7 +25,7 @@ async def get_reconciliation_summary(session_id: str, db: Session = Depends(get_
         return StandardResponse(success=False, message="AI compilation failed.", data=None, errors=[str(e)])
 
 @router.get("/explain-mismatch/{result_id}", response_model=StandardResponse)
-async def explain_transaction_mismatch(result_id: int, db: Session = Depends(get_db)):
+async def explain_transaction_mismatch(result_id: str, db: Session = Depends(get_db)):
     """Provides a detailed diagnostic explanation of a single transaction mismatch."""
     logger.info(f"API: Explaining transaction mismatch: {result_id}")
     try:

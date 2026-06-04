@@ -13,14 +13,14 @@ class OperationalInsightService:
 
         mismatches = db.query(ReconciliationResult).filter(
             ReconciliationResult.session_id == session_id,
-            ReconciliationResult.status != "MATCHED"
+            ReconciliationResult.match_type != "MATCHED"
         ).limit(20).all()
 
         context = {
             "session_metrics": {
-                "total": session.total_records,
+                "total": max(session.total_bank_records or 0, session.total_ledger_records or 0),
                 "matched": session.matched_records,
-                "mismatched": session.mismatch_records
+                "mismatched": session.mismatched_records
             },
             "discrepancy_samples": TokenOptimizationUtils.extract_mismatch_samples(mismatches)
         }

@@ -12,9 +12,9 @@ class MismatchExplanationService:
             return {"success": False, "error": "ReconciliationResultNotFound"}
 
         context = {
-            "status": result.status,
-            "bank_statement_record": result.bank_record_data,
-            "external_ledger_record": result.external_record_data
+            "status": result.match_type,
+            "bank_statement_record": {c.name: getattr(result.bank_transaction, c.name) for c in result.bank_transaction.__table__.columns} if result.bank_transaction else None,
+            "external_ledger_record": {c.name: getattr(result.ledger_transaction, c.name) for c in result.ledger_transaction.__table__.columns} if result.ledger_transaction else None
         }
 
         return await GroqService.get_structured_completion(

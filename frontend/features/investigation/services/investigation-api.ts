@@ -23,6 +23,11 @@ export class InvestigationApiService {
     return res.data;
   }
 
+  static async getMerchantDeepDive(sessionId: string, merchantName: string): Promise<StandardResponse<any>> {
+    const res = await api.get(`/investigation/merchant-deepdive/${sessionId}?merchant=${encodeURIComponent(merchantName)}`);
+    return res.data;
+  }
+
   static async chatWithAssistant(sessionId: string, query: string): Promise<StandardResponse<any>> {
     const res = await api.post(`/ai-assistant/chat/${sessionId}`, { query });
     return res.data;

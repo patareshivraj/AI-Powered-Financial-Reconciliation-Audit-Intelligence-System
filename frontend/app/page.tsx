@@ -1,45 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { 
-  BarChart3, 
   Layers, 
-  History, 
-  Settings, 
   RefreshCw, 
-  FileText, 
   TrendingUp, 
   ShieldAlert, 
   ArrowRight,
-  Database,
   Terminal,
   Activity,
   Check,
   HelpCircle,
   Sparkles,
   Receipt,
-  FileSpreadsheet,
   Download
 } from "lucide-react";
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  CartesianGrid 
-} from "recharts";
 
 // Import custom Phase 1 UI components & services
 import { UploadDropzone } from "../components/upload-dropzone";
 import { DataPreviewTable } from "../components/data-preview-table";
 import { UploadApiService } from "../services/upload-api";
-import { SessionPreviewResponse } from "../types/upload";
 
 // Import custom Phase 2 UI components & services
-import { ReconciliationApiService, ReconciliationSummary, ReconciliationResult } from "../services/reconciliation-api";
-import { AiApiService, ReconciliationAiSummary } from "../features/ai/services/ai-api";
 import { ReconciliationSummaryCards } from "../components/reconciliation-summary-cards";
 import { ReconciliationTable } from "../components/reconciliation-table";
 
@@ -50,67 +32,42 @@ import { MerchantDatagrid } from "../features/investigation/components/merchant-
 import { AiChatAssistant } from "../features/ai-assistant/components/ai-chat-assistant";
 import { InvestigationApiService } from "../features/investigation/services/investigation-api";
 
-// Mock statistics logs for demonstration
-const RECONCILIATION_HISTORY = [
-  { date: "May 20", matchRate: 98.4, totalVolume: 1205000, mismatchCount: 14 },
-  { date: "May 21", matchRate: 99.1, totalVolume: 1420000, mismatchCount: 8 },
-  { date: "May 22", matchRate: 97.8, totalVolume: 980000, mismatchCount: 22 },
-  { date: "May 23", matchRate: 99.5, totalVolume: 1850000, mismatchCount: 4 },
-  { date: "May 24", matchRate: 98.9, totalVolume: 1560000, mismatchCount: 11 },
-  { date: "May 25", matchRate: 99.2, totalVolume: 2100000, mismatchCount: 6 },
-];
+// Import safety & hydration custom hooks and components
+import { ErrorBoundary } from "../components/error-boundary";
+import { SidebarNav } from "../components/layout/sidebar-nav";
+import { TopHeader } from "../components/layout/top-header";
 
-export default function Home() {
-  // Navigation active tab
-  const [activeTab, setActiveTab] = useState<"dashboard" | "workspace" | "history" | "settings" | "analytics" | "investigation">("dashboard");
+// Import Reconciliation Context
+import { ReconciliationProvider, useReconciliation } from "../context/reconciliation-context";
 
-  // Phase 1 API session status
-  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
-  const [bankFile, setBankFile] = useState<File | null>(null);
-  const [ledgerFile, setLedgerFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<SessionPreviewResponse | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState("");
-
-  // Phase 2 Reconciliation status
-  const [reconciliationSummary, setReconciliationSummary] = useState<ReconciliationSummary | null>(null);
-  const [reconciliationResults, setReconciliationResults] = useState<ReconciliationResult[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processLogs, setProcessLogs] = useState<string[]>([]);
-  const [processCompleted, setProcessCompleted] = useState(false);
-  const [reconError, setReconError] = useState("");
-
-  // Phase 3 AI Summary states
-  const [aiSummary, setAiSummary] = useState<ReconciliationAiSummary | null>(null);
-  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
-  const [aiSummaryError, setAiSummaryError] = useState("");
-
-  // Active workspace table view (switch between file previewer vs reconciliation pairings)
-  const [workspaceTab, setWorkspaceTab] = useState<"reconciliation" | "bank" | "ledger">("reconciliation");
-
-  // Load preview data automatically when both files are successfully uploaded
-  useEffect(() => {
-    if (sessionId && bankFile && ledgerFile) {
-      loadSessionPreview(sessionId);
-    }
-  }, [sessionId, bankFile, ledgerFile]);
-
-  const loadSessionPreview = async (sid: string) => {
-    setPreviewLoading(true);
-    setPreviewError("");
-    try {
-      const result = await UploadApiService.getSessionPreview(sid);
-      if (result.success && result.data) {
-        setPreviewData(result.data);
-      } else {
-        setPreviewError(result.errors?.[0] || "Could not retrieve preview data from standard parser.");
-      }
-    } catch (err: any) {
-      setPreviewError(err.message || "Failed connecting to verification service.");
-    } finally {
-      setPreviewLoading(false);
-    }
-  };
+function DashboardContent() {
+  const {
+    activeTab,
+    setActiveTab,
+    workspaceTab,
+    setWorkspaceTab,
+    sessionId,
+    setSessionId,
+    bankFile,
+    setBankFile,
+    ledgerFile,
+    setLedgerFile,
+    previewData,
+    previewLoading,
+    previewError,
+    reconciliationSummary,
+    reconciliationResults,
+    isProcessing,
+    processLogs,
+    processCompleted,
+    reconError,
+    runReconciliation,
+    resetSession,
+    aiSummary,
+    aiSummaryLoading,
+    aiSummaryError,
+    generateAiInsights
+  } = useReconciliation();
 
   const handleBankUploadSuccess = (file: File, sid: string) => {
     setBankFile(file);
@@ -122,275 +79,20 @@ export default function Home() {
     setSessionId(sid);
   };
 
-  // Run main reconciliation engine via backend API
-  const runReconciliation = async () => {
-    if (!bankFile || !ledgerFile || !sessionId) return;
-
-    setIsProcessing(true);
-    setProcessCompleted(false);
-    setProcessLogs([]);
-    setReconError("");
-
-    const logMessages = [
-      `Initializing BANK AI rule-based matching engine for session: ${sessionId.toUpperCase()}`,
-      `Loading SQL connection pools...`,
-      `Reading Statement records: ${bankFile.name}`,
-      `Reading Ledger records: ${ledgerFile.name}`,
-      `Running DuplicateDetectionService: Deduplicating dataset references and value amounts...`,
-      `Running MatchingService: Funneling transactions through reference keys, value amounts, and booking dates...`,
-      `Status mappings applied: MATCHED, PARTIAL_MATCH, DATE_MISMATCH, AMOUNT_MISMATCH, DUPLICATE`,
-      `Persisting matching pairings into SQLite database table 'reconciliation_results'...`,
-      `Updating state variables and transaction indices...`,
-      `Reconciliation pipeline completed successfully. Clearing transaction queues.`
-    ];
-
-    try {
-      // Print logs in simulated sequence for excellent user visual micro-feedback
-      for (let i = 0; i < logMessages.length; i++) {
-        setProcessLogs((prev) => [...prev, logMessages[i]]);
-        await new Promise((resolve) => setTimeout(resolve, 350));
-      }
-
-      // Trigger the backend API matching runner
-      const res = await ReconciliationApiService.runReconciliation(sessionId);
-      
-      if (res.success && res.data) {
-        setProcessLogs((prev) => [...prev, "Waiting for background workers to finalize..."]);
-        
-        // Poll for summary completion since it's a background task
-        let summaryData = null;
-        for (let attempts = 0; attempts < 60; attempts++) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          try {
-            const summaryRes = await ReconciliationApiService.getReconciliationSummary(sessionId);
-            if (summaryRes.success && summaryRes.data && (summaryRes.data.matched_count > 0 || summaryRes.data.mismatch_count > 0)) {
-              summaryData = summaryRes.data;
-              break;
-            }
-          } catch (e) {
-            // Ignore temporary network errors during polling
-          }
-        }
-
-        if (summaryData) {
-          setReconciliationSummary(summaryData);
-          
-          // Fetch detailed results list immediately
-          const resultsRes = await ReconciliationApiService.getReconciliationResults(sessionId);
-          if (resultsRes.success && resultsRes.data) {
-            setReconciliationResults(resultsRes.data);
-          }
-          
-          setProcessCompleted(true);
-        } else {
-          setReconError("Engine timeout. Background matching took too long.");
-        }
-      } else {
-        setReconError(res.errors?.[0] || "Backend matching engine failed.");
-      }
-    } catch (err: any) {
-      console.error(`Reconciliation engine run failure: ${err}`);
-      setReconError(err.message || "An unexpected error occurred during the matching run.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Generate Llama-3 executive insights and summary aggregates
-  const generateAiInsights = async () => {
-    if (!sessionId) return;
-    setAiSummaryLoading(true);
-    setAiSummaryError("");
-    setAiSummary(null);
-    try {
-      const res = await AiApiService.getAiSummary(sessionId);
-      if (res.success && res.data) {
-        setAiSummary(res.data);
-      } else {
-        setAiSummaryError(res.errors?.[0] || "AI aggregate summary failed.");
-      }
-    } catch (err: any) {
-      setAiSummaryError(err.message || "Failed connecting with the Llama-3 compiler.");
-    } finally {
-      setAiSummaryLoading(false);
-    }
-  };
-
-
   return (
     <div className="flex h-screen bg-[#09090b] text-neutral-100 overflow-hidden font-sans">
       {/* 1. Left Sidebar Navigation */}
-      <aside className="w-[280px] border-r border-white/[0.05] bg-black flex flex-col justify-between p-5 shrink-0 z-10 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-        <div className="relative z-10">
-          {/* Platform Title */}
-          <div className="flex items-center gap-3 px-2 py-4 mb-8">
-            <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-extrabold text-xl border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-              <Sparkles className="h-5 w-5 text-emerald-500" />
-            </div>
-            <div>
-              <h1 className="font-extrabold text-lg tracking-tight text-white leading-tight">BANK AI</h1>
-              <p className="text-[11px] text-neutral-500 font-medium tracking-wide uppercase">Workspace Ops</p>
-            </div>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="space-y-1.5">
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                activeTab === "dashboard"
-                  ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
-                  : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5"
-              }`}
-            >
-              <BarChart3 className="h-4 w-4" />
-              Overview Dashboard
-            </button>
-            <button
-              onClick={() => setActiveTab("workspace")}
-              disabled={!previewData}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                !previewData 
-                  ? "opacity-30 cursor-not-allowed text-neutral-600" 
-                  : activeTab === "workspace"
-                    ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
-                    : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5"
-              }`}
-            >
-              <Layers className="h-4 w-4" />
-              Reconciliation Workspace
-            </button>
-            <button
-              onClick={() => setActiveTab("analytics")}
-              disabled={!reconciliationSummary}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                !reconciliationSummary 
-                  ? "opacity-30 cursor-not-allowed text-neutral-600" 
-                  : activeTab === "analytics"
-                    ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
-                    : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5"
-              }`}
-            >
-              <BarChart3 className="h-4 w-4" />
-              Advanced Analytics
-            </button>
-            <button
-              onClick={() => setActiveTab("investigation")}
-              disabled={!reconciliationSummary}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                !reconciliationSummary 
-                  ? "opacity-30 cursor-not-allowed text-neutral-600" 
-                  : activeTab === "investigation"
-                    ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
-                    : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5"
-              }`}
-            >
-              <Terminal className="h-4 w-4" />
-              Smart Investigation
-            </button>
-            <button
-              onClick={() => setActiveTab("history")}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                activeTab === "history"
-                  ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
-                  : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5"
-              }`}
-            >
-              <History className="h-4 w-4" />
-              History & Audits
-            </button>
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                activeTab === "settings"
-                  ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
-                  : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5"
-              }`}
-            >
-              <Settings className="h-4 w-4" />
-              Platform Settings
-            </button>
-          </nav>
-        </div>
-
-        {/* Database Status Footer Info */}
-        <div className="space-y-4 relative z-10">
-          <div className="p-3.5 bg-white/[0.02] rounded-xl border border-white/[0.05] space-y-3 shadow-inner">
-            <div className="flex items-center justify-between text-xs text-neutral-400">
-              <span className="flex items-center gap-2 font-medium">
-                <Database className="h-3.5 w-3.5 text-neutral-500" /> Database
-              </span>
-              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px] flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                ONLINE
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs text-neutral-400">
-              <span className="flex items-center gap-2 font-medium">
-                <Terminal className="h-3.5 w-3.5 text-neutral-500" /> Pipeline
-              </span>
-              <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono text-[10px]">
-                LOCAL DEV
-              </span>
-            </div>
-          </div>
-          
-          <div className="p-3.5 bg-black rounded-xl border border-white/[0.05] shadow-lg flex items-center justify-between group hover:border-white/10 transition-colors">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Simulated Role</span>
-              <span className="text-xs font-mono text-emerald-400 font-semibold mt-0.5 flex items-center gap-1.5">
-                {typeof window !== 'undefined' ? localStorage.getItem('bank_ai_role') || 'UNKNOWN' : 'LOADING'}
-              </span>
-            </div>
-            <button 
-              onClick={() => {
-                localStorage.removeItem('bank_ai_token');
-                localStorage.removeItem('bank_ai_role');
-                window.location.reload();
-              }}
-              className="px-3 py-1.5 rounded-lg bg-red-500/5 hover:bg-red-500/20 text-red-500 text-[11px] font-bold transition-colors ring-1 ring-inset ring-red-500/10 hover:ring-red-500/30"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </aside>
+      <SidebarNav />
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col h-full bg-[#09090b] relative z-0">
+      <div className="flex-1 flex flex-col h-full bg-[#09090b]">
         
         {/* Top Header */}
-        <header className="h-16 border-b border-white/[0.05] bg-black/40 backdrop-blur-md flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
-          <div className="flex items-center gap-4">
-            <h2 className="text-sm font-semibold text-white tracking-wide">
-              {activeTab === "dashboard" && "Platform Overview"}
-              {activeTab === "workspace" && "Reconciliation Workspace"}
-              {activeTab === "analytics" && "Advanced Analytics"}
-              {activeTab === "investigation" && "Smart Investigation Copilot"}
-              {activeTab === "history" && "Audit History"}
-              {activeTab === "settings" && "Platform Settings"}
-            </h2>
-            <div className="h-4 w-px bg-white/[0.1]"></div>
-            <p className="text-[11px] text-neutral-500 font-medium hidden sm:flex items-center gap-1.5 uppercase tracking-wider">
-              <Sparkles className="h-3 w-3 text-emerald-500/70" />
-              Intelligence Engine Active
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {sessionId && (
-              <div className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400 font-semibold shadow-inner">
-                Session: {sessionId.substring(0, 8).toUpperCase()}
-              </div>
-            )}
-            <div className="px-2.5 py-1 rounded bg-white/[0.03] border border-white/[0.1] text-[10px] font-mono text-neutral-400 font-medium">
-              v0.3.0-rc
-            </div>
-          </div>
-        </header>
+        <TopHeader />
 
         {/* Dynamic Tab Body */}
-        <div className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-[1600px] w-full mx-auto custom-scrollbar">
+          <ErrorBoundary fallbackMessage="The workspace view crashed. Try resetting the session or clearing your cache.">
           
           {/* TAB 1: DASHBOARD */}
           {activeTab === "dashboard" && (
@@ -469,17 +171,7 @@ export default function Home() {
                     )}
                     {(bankFile || ledgerFile) && (
                       <button 
-                        onClick={() => {
-                          setBankFile(null);
-                          setLedgerFile(null);
-                          setSessionId(undefined);
-                          setPreviewData(null);
-                          setReconciliationSummary(null);
-                          setReconciliationResults([]);
-                          setProcessCompleted(false);
-                          setProcessLogs([]);
-                          setReconError("");
-                        }}
+                        onClick={resetSession}
                         className="border border-neutral-800 text-neutral-400 hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
                       >
                         Reset Upload Session
@@ -556,7 +248,7 @@ export default function Home() {
 
                 {/* AI Executive Summary Block (Only display if matching run is completed) */}
                 {processCompleted && reconciliationSummary && (
-                  <div className="bg-neutral-900/40 border border-neutral-900 rounded-xl p-6 space-y-4">
+                  <div className="bg-neutral-900/40 border border-neutral-900 rounded-xl p-6 space-y-4 mt-6">
                     <div className="flex items-center justify-between border-b border-neutral-900 pb-4">
                       <div className="flex items-center gap-2.5">
                         <Sparkles className="h-5 w-5 text-emerald-400 animate-pulse" />
@@ -761,14 +453,12 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <AnomalyPanel sessionId={sessionId} />
-                  <MerchantDatagrid sessionId={sessionId} />
-                </div>
-                <div className="lg:col-span-1">
-                  <AiChatAssistant sessionId={sessionId} />
-                </div>
+              <div className="space-y-6 relative">
+                <AnomalyPanel sessionId={sessionId} />
+                <MerchantDatagrid sessionId={sessionId} />
+                
+                {/* AI Assistant is now a floating widget */}
+                <AiChatAssistant sessionId={sessionId} />
               </div>
             </div>
           )}
@@ -802,7 +492,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* TAB 4: SETTINGS */}
+          {/* TAB 6: SETTINGS */}
           {activeTab === "settings" && (
             <div className="space-y-6 max-w-3xl">
               <div className="bg-neutral-900/40 border border-neutral-900 rounded-xl p-6 space-y-5">
@@ -856,8 +546,20 @@ export default function Home() {
               </div>
             </div>
           )}
+          </ErrorBoundary>
         </div>
       </div>
+      
+      {/* Floating AI Chat Widget */}
+      <AiChatAssistant />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <ReconciliationProvider>
+      <DashboardContent />
+    </ReconciliationProvider>
   );
 }

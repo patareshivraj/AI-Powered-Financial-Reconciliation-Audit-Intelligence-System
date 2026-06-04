@@ -15,13 +15,13 @@ class AiSummaryService:
         # 2. Fetch specific mismatched discrepancies (Limit to 10 for token optimization)
         mismatches = db.query(ReconciliationResult).filter(
             ReconciliationResult.session_id == session_id,
-            ReconciliationResult.status.in_(["AMOUNT_MISMATCH", "DATE_MISMATCH", "MISSING_IN_BANK", "MISSING_IN_EXTERNAL"])
+            ReconciliationResult.match_type.in_(["AMOUNT_MISMATCH", "DATE_MISMATCH", "MISSING_IN_BANK", "MISSING_IN_EXTERNAL"])
         ).limit(10).all()
 
         context = {
-            "total_records": session.total_records,
+            "total_records": max(session.total_bank_records or 0, session.total_ledger_records or 0),
             "matched_records": session.matched_records,
-            "mismatch_records": session.mismatch_records,
+            "mismatch_records": session.mismatched_records,
             "discrepancy_samples": TokenOptimizationUtils.extract_mismatch_samples(mismatches)
         }
 
