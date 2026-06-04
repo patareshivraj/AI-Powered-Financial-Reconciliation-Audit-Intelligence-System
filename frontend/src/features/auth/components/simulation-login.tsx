@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { AuthApiService } from "../services/auth-api";
 import { ShieldAlert, Loader2, KeyRound } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "components/ui/button";
 
 export function SimulationLoginOverlay({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

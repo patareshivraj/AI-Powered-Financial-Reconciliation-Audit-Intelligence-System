@@ -17,28 +17,31 @@ import {
 } from "lucide-react";
 
 // Import custom Phase 1 UI components & services
-import { UploadDropzone } from "../components/upload-dropzone";
-import { DataPreviewTable } from "../components/data-preview-table";
-import { UploadApiService } from "../services/upload-api";
+import { UploadDropzone } from "./components/upload-dropzone";
+import { DataPreviewTable } from "./components/data-preview-table";
+import { UploadApiService } from "./services/upload-api";
 
 // Import custom Phase 2 UI components & services
-import { ReconciliationSummaryCards } from "../components/reconciliation-summary-cards";
-import { ReconciliationTable } from "../components/reconciliation-table";
+import { ReconciliationSummaryCards } from "./components/reconciliation-summary-cards";
+import { ReconciliationTable } from "./components/reconciliation-table";
 
 // Import custom Phase 4 UI components
-import { AnalyticsDashboard } from "../features/analytics/components/analytics-dashboard";
-import { AnomalyPanel } from "../features/investigation/components/anomaly-panel";
-import { MerchantDatagrid } from "../features/investigation/components/merchant-datagrid";
-import { AiChatAssistant } from "../features/ai-assistant/components/ai-chat-assistant";
-import { InvestigationApiService } from "../features/investigation/services/investigation-api";
+import { AnalyticsDashboard } from "./features/analytics/components/analytics-dashboard";
+import { AnomalyPanel } from "./features/investigation/components/anomaly-panel";
+import { MerchantDatagrid } from "./features/investigation/components/merchant-datagrid";
+import { AiChatAssistant } from "./features/ai-assistant/components/ai-chat-assistant";
+import { InvestigationApiService } from "./features/investigation/services/investigation-api";
 
 // Import safety & hydration custom hooks and components
-import { ErrorBoundary } from "../components/error-boundary";
-import { SidebarNav } from "../components/layout/sidebar-nav";
-import { TopHeader } from "../components/layout/top-header";
+import { ErrorBoundary } from "./components/error-boundary";
+import { SidebarNav } from "./components/layout/sidebar-nav";
+import { TopHeader } from "./components/layout/top-header";
+
+// Import Auth Simulation Overlay
+import { SimulationLoginOverlay } from "./features/auth/components/simulation-login";
 
 // Import Reconciliation Context
-import { ReconciliationProvider, useReconciliation } from "../context/reconciliation-context";
+import { ReconciliationProvider, useReconciliation } from "./context/reconciliation-context";
 
 function DashboardContent() {
   const {
@@ -556,7 +559,9 @@ function DashboardContent() {
 export default function Home() {
   return (
     <ReconciliationProvider>
-      <DashboardContent />
+      <SimulationLoginOverlay>
+        <DashboardContent />
+      </SimulationLoginOverlay>
     </ReconciliationProvider>
   );
 }

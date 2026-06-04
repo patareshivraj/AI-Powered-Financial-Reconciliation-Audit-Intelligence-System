@@ -1,7 +1,5 @@
-import axios from "axios";
 import { StandardResponse } from "../../../types/upload";
-
-const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+import { api } from "../../../services/api-client";
 
 export interface TokenResponse {
   access_token: string;
@@ -16,7 +14,7 @@ export class AuthApiService {
    * If it fails (e.g. user already exists), we catch it and ignore it in the simulation script.
    */
   static async signup(email: string, password: string, fullName: string, orgName: string): Promise<StandardResponse<any>> {
-    const res = await axios.post(`${API_BASE_URL}/auth/signup`, {
+    const res = await api.post(`/auth/signup`, {
       email,
       password,
       full_name: fullName,
@@ -32,8 +30,8 @@ export class AuthApiService {
     const formData = new URLSearchParams();
     formData.append('username', email);
     formData.append('password', password);
-    
-    const res = await axios.post(`${API_BASE_URL}/auth/login`, formData, {
+
+    const res = await api.post(`/auth/login`, formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
