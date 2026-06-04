@@ -45,7 +45,7 @@ export function AiChatAssistant({ sessionId }: { sessionId: string }) {
   };
 
   return (
-    <div className="w-full h-[500px] flex flex-col bg-slate-950/40 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-md">
+    <div className="w-full h-[calc(100vh-220px)] min-h-[500px] flex flex-col bg-slate-950/40 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-md">
       {/* Header */}
       <div className="p-4 border-b border-slate-800 bg-slate-900/30 flex items-center justify-between">
         <div className="flex items-center gap-2">

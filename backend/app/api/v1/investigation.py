@@ -42,6 +42,18 @@ async def get_merchant_intelligence(session_id: str, db: Session = Depends(get_d
         logger.error(f"API Error fetching merchant intelligence: {str(e)}")
         return StandardResponse(success=False, message="Failed fetching merchant intelligence.", data=None, errors=[str(e)])
 
+@router.get("/merchant-intelligence/{session_id}/merchant/{merchant_name}", response_model=StandardResponse)
+async def get_merchant_deep_dive(session_id: str, merchant_name: str, db: Session = Depends(get_db)):
+    """Fetches a deep dive and AI summary for a specific merchant."""
+    try:
+        data = await MerchantIntelligenceService.get_merchant_deep_dive(db, session_id, merchant_name)
+        if "error" in data:
+            return StandardResponse(success=False, message=data["error"], data=None, errors=[data["error"]])
+        return StandardResponse(success=True, message="Merchant deep dive retrieved.", data=data, errors=[])
+    except Exception as e:
+        logger.error(f"API Error fetching merchant deep dive: {str(e)}")
+        return StandardResponse(success=False, message="Failed fetching merchant deep dive.", data=None, errors=[str(e)])
+
 @router.get("/anomalies/{session_id}", response_model=StandardResponse)
 async def get_anomalies(session_id: str, db: Session = Depends(get_db)):
     """Fetches deterministically detected anomalies for the dashboard."""

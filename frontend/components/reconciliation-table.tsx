@@ -253,7 +253,7 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
       <div className="w-full rounded-2xl border border-white/[0.05] bg-[#09090b] shadow-2xl overflow-hidden ring-1 ring-white/5">
         <div 
           ref={tableContainerRef} 
-          className="overflow-auto max-h-[60vh] custom-scrollbar"
+          className="overflow-auto max-h-[calc(100vh-320px)] min-h-[400px] custom-scrollbar"
         >
           <table className="w-full text-left text-xs border-collapse">
             <thead className="sticky top-0 z-10 bg-black/80 backdrop-blur-xl border-b border-white/[0.05]">

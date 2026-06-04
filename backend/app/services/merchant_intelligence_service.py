@@ -47,3 +47,67 @@ class MerchantIntelligenceService:
         
         # Return top 50 merchants
         return merchant_stats.head(50).to_dict(orient='records')
+
+    @staticmethod
+    async def get_merchant_deep_dive(db: Session, session_id: str, merchant_name: str) -> Dict[str, Any]:
+        """Fetches detailed transactions for a specific merchant and generates an AI summary."""
+        results = db.query(ReconciliationResult).options(
+            joinedload(ReconciliationResult.bank_transaction)
+        ).filter(ReconciliationResult.session_id == session_id).all()
+        
+        merchant_txs = []
+        mismatches = []
+        total_vol = 0.0
+        
+        for r in results:
+            if r.bank_transaction and (r.bank_transaction.description or "UNKNOWN") == merchant_name:
+                item = {
+                    "id": r.id,
+                    "reference": r.bank_transaction.reference,
+                    "date": r.bank_transaction.transaction_date,
+                    "amount": r.bank_transaction.amount,
+                    "status": r.match_type,
+                    "remarks": r.remarks
+                }
+                merchant_txs.append(item)
+                total_vol += (r.bank_transaction.amount or 0.0)
+                if r.match_type != 'MATCHED':
+                    mismatches.append(item)
+                    
+        if not merchant_txs:
+            return {"error": "Merchant not found."}
+
+        # 2. Get AI Summary using Groq
+        from app.integrations.groq.groq_service import GroqService
+        from pydantic import BaseModel, Field
+        class MerchantSummaryResponse(BaseModel):
+            summary: str = Field(description="A concise 2-3 sentence AI summary of this merchant's reconciliation status.")
+            risk_level: str = Field(description="LOW, MEDIUM, or HIGH")
+            
+        context = {
+            "merchant_name": merchant_name,
+            "total_transactions": len(merchant_txs),
+            "total_volume": total_vol,
+            "mismatch_count": len(mismatches),
+            "mismatch_samples": mismatches[:10]
+        }
+        
+        ai_response = await GroqService.get_structured_completion(
+            prompt_file="merchant_summary.txt",
+            context_data=context,
+            response_model=MerchantSummaryResponse,
+            max_tokens=300
+        )
+        
+        ai_summary = ai_response.get("data", {}).get("summary", "AI analysis unavailable.")
+        risk_level = ai_response.get("data", {}).get("risk_level", "UNKNOWN")
+        
+        return {
+            "merchant_name": merchant_name,
+            "total_transactions": len(merchant_txs),
+            "total_volume": total_vol,
+            "mismatch_count": len(mismatches),
+            "transactions": merchant_txs,
+            "ai_summary": ai_summary,
+            "ai_risk_level": risk_level
+        }

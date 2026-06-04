@@ -390,7 +390,7 @@ export default function Home() {
         </header>
 
         {/* Dynamic Tab Body */}
-        <div className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-[1600px] w-full mx-auto custom-scrollbar">
           
           {/* TAB 1: DASHBOARD */}
           {activeTab === "dashboard" && (

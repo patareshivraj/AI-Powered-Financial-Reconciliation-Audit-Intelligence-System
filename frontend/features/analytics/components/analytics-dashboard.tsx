@@ -63,7 +63,7 @@ export function AnalyticsDashboard({ sessionId }: { sessionId: string }) {
         <h3 className="text-sm font-bold text-white mb-6 flex items-center gap-2">
           <Activity className="h-4 w-4 text-emerald-400" /> System Processing Velocity
         </h3>
-        <div className="h-64 w-full">
+        <div className="h-[400px] min-h-[300px] w-full">
           {data.volume_trends && data.volume_trends.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data.volume_trends} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>

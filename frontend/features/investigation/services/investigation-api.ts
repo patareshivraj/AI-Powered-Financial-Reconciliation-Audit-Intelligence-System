@@ -18,6 +18,11 @@ export class InvestigationApiService {
     return res.data;
   }
 
+  static async getMerchantDeepDive(sessionId: string, merchantName: string): Promise<StandardResponse<any>> {
+    const res = await api.get(`/investigation/merchant-intelligence/${sessionId}/merchant/${encodeURIComponent(merchantName)}`);
+    return res.data;
+  }
+
   static async getAnomalies(sessionId: string): Promise<StandardResponse<any[]>> {
     const res = await api.get(`/investigation/anomalies/${sessionId}`);
     return res.data;
