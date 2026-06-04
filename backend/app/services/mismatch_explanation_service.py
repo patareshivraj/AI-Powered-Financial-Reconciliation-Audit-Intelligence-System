@@ -6,7 +6,7 @@ from app.integrations.groq.schemas import MismatchExplanationResponse
 
 class MismatchExplanationService:
     @staticmethod
-    async def explain_mismatch(db: Session, result_id: int):
+    async def explain_mismatch(db: Session, result_id: str):
         result = db.query(ReconciliationResult).filter(ReconciliationResult.id == result_id).first()
         if not result:
             return {"success": False, "error": "ReconciliationResultNotFound"}
