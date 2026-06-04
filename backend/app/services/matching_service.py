@@ -67,28 +67,39 @@ class MatchingService:
                         if e_tx.id in matched_external_ids:
                             continue
 
-                        # Check amount match
-                        amounts_match = abs(round(b_tx.amount, 2) - abs(round(e_tx.amount, 2))) < 0.01
+                        # Check amount match (absolute comparison to handle signed deposits/withdrawals)
+                        amounts_match = abs(abs(round(b_tx.amount, 2)) - abs(round(e_tx.amount, 2))) < 0.01
                         
-                        # Check date match (ignoring hours/minutes if it is a general day match)
+                        # Check date proximity (T+0 to T+2 settlement window is standard in banking)
                         b_date = b_tx.transaction_date.date()
                         e_date = e_tx.transaction_date.date()
-                        dates_match = b_date == e_date
+                        date_diff_days = abs((b_date - e_date).days)
+                        dates_exact = date_diff_days == 0
+                        dates_within_settlement = date_diff_days <= 2
 
-                        if amounts_match and dates_match:
+                        if amounts_match and dates_exact:
+                            # Perfect match: reference + amount + exact date
                             best_match = e_tx
                             best_status = "MATCHED"
                             best_score = 100
                             best_remarks = "Perfect match on reference, amount, and value date."
                             break
-                        elif amounts_match:
-                            # Amount matches, but date differs
-                            best_match = e_tx
-                            best_status = "DATE_MISMATCH"
-                            best_score = 75
-                            best_remarks = f"Reference and amount match. Date mismatch: Bank={b_date}, Ledger={e_date}."
-                        elif dates_match and (best_score < 70):
-                            # Date matches, but amount differs
+                        elif amounts_match and dates_within_settlement:
+                            # Reference + amount match, date within T+1/T+2 settlement window
+                            if best_score < 95:
+                                best_match = e_tx
+                                best_status = "MATCHED"
+                                best_score = 95
+                                best_remarks = f"Reference and amount match. Settlement delay of {date_diff_days} day(s): Bank={b_date}, Ledger={e_date}."
+                        elif amounts_match and not dates_within_settlement:
+                            # Amount matches but date is beyond settlement window
+                            if best_score < 75:
+                                best_match = e_tx
+                                best_status = "DATE_MISMATCH"
+                                best_score = 75
+                                best_remarks = f"Reference and amount match. Date mismatch beyond settlement window ({date_diff_days} days): Bank={b_date}, Ledger={e_date}."
+                        elif not amounts_match and dates_within_settlement and (best_score < 70):
+                            # Date matches/close, but amount differs
                             best_match = e_tx
                             best_status = "AMOUNT_MISMATCH"
                             best_score = 70

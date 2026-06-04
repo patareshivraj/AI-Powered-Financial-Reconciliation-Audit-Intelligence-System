@@ -20,6 +20,8 @@ from app.api.v1.ai import router as ai_router
 from app.api.v1.investigation import router as investigation_router
 from app.api.v1.ai_assistant import router as ai_assistant_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.auth import router as auth_router
+
 # 1. Initialize FastAPI Application
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 app = FastAPI(
@@ -61,6 +63,7 @@ def generic_exception_handler(request: Request, exc: Exception):
 
 # 4. Register API Routing Subgroups
 app.include_router(health_router, prefix=f"{settings.API_V1_STR}/health", tags=["System Diagnostics"])
+app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 app.include_router(recon_router, prefix=f"{settings.API_V1_STR}/reconciliation", tags=["Reconciliation Workflows"])
 app.include_router(uploads_router, prefix=f"{settings.API_V1_STR}/uploads", tags=["Upload Operations"])
 app.include_router(preview_router, prefix=f"{settings.API_V1_STR}/preview", tags=["Data Previewers"])

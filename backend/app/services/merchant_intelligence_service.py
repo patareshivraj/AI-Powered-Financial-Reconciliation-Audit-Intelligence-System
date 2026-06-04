@@ -1,5 +1,5 @@
 import pandas as pd
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.base import ReconciliationResult, Transaction
 from app.utils.logging import logger
 from typing import Dict, Any, List
@@ -14,7 +14,9 @@ class MerchantIntelligenceService:
         logger.info(f"Running merchant intelligence for session {session_id}")
         
         # We'll analyze bank transactions for merchant insights
-        results = db.query(ReconciliationResult).filter(ReconciliationResult.session_id == session_id).all()
+        results = db.query(ReconciliationResult).options(
+            joinedload(ReconciliationResult.bank_transaction)
+        ).filter(ReconciliationResult.session_id == session_id).all()
         
         data = []
         for r in results:

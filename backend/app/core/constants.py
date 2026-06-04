@@ -52,6 +52,7 @@ BANK_COLUMN_MAPPINGS = {
         "booking_date",
         "value_date",
         "created_at",
+        "settlement_date",
         "timestamp",
         "time"
     ],
@@ -61,10 +62,14 @@ BANK_COLUMN_MAPPINGS = {
         "memo",
         "particulars",
         "narrative",
+        "narration",
         "remarks",
         "transaction_details",
         "payee",
-        "details"
+        "details",
+        "merchant",
+        "merchant_name",
+        "entity"
     ],
     "transaction_type": [
         "transaction_type",

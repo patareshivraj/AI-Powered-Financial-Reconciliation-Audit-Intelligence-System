@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.base import ReconciliationSession, Transaction, ReconciliationResult
 from app.services.duplicate_detection_service import DuplicateDetectionService
 from app.services.matching_service import MatchingService
@@ -7,6 +7,14 @@ from app.schemas.reconciliation import RunReconciliationResponse, Reconciliation
 from app.utils.logging import logger
 from fastapi import HTTPException
 from typing import List
+import os
+import glob
+import pandas as pd
+from datetime import datetime
+from app.core.config import settings
+from app.services.parser_service import ParserService
+from app.services.normalizer_service import NormalizerService
+import uuid
 
 class ReconciliationService:
     @staticmethod
@@ -30,6 +38,52 @@ class ReconciliationService:
 
         # 2. Load all transactions linked to this session
         all_txs = db.query(Transaction).filter(Transaction.session_id == session_id).all()
+        if not all_txs:
+            logger.info("Transactions not yet loaded in DB. Parsing from isolated sandbox...")
+            session_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR, session_id))
+            
+            def load_source(file_pattern, source_type):
+                matches = glob.glob(os.path.join(session_dir, f"{file_pattern}.*"))
+                if not matches: return
+                raw_df = ParserService.parse_file(matches[0])
+                normalized_df = NormalizerService.normalize_dataframe(raw_df, source_type)
+                
+                # Replace pandas NaN/NaT with None for SQL insert
+                normalized_df = normalized_df.where(pd.notna(normalized_df), None)
+                records = normalized_df.to_dict(orient="records")
+                
+                mappings = []
+                now = datetime.utcnow()
+                for r in records:
+                    date_val = r.get('date')
+                    dt = pd.to_datetime(date_val) if pd.notna(date_val) else now
+                    if isinstance(dt, pd.Timestamp):
+                        dt = dt.to_pydatetime()
+                        
+                    ref_val = r.get('reference_id')
+                    desc_val = r.get('description')
+                    amt_val = r.get('amount')
+                    
+                    mappings.append({
+                        "id": str(uuid.uuid4()),
+                        "session_id": session_id,
+                        "source_type": source_type,
+                        "transaction_date": dt,
+                        "amount": float(amt_val) if pd.notna(amt_val) else 0.0,
+                        "reference": str(ref_val).strip() if pd.notna(ref_val) else None,
+                        "description": str(desc_val).strip() if pd.notna(desc_val) else None,
+                        "created_at": now,
+                        "updated_at": now
+                    })
+                db.bulk_insert_mappings(Transaction, mappings)
+                db.commit()
+
+            load_source("bank_statement", "BANK_STATEMENT")
+            load_source("external_transactions", "EXTERNAL_LEDGER")
+            
+            # Reload from db
+            all_txs = db.query(Transaction).filter(Transaction.session_id == session_id).all()
+            
         if not all_txs:
             logger.error(f"No transactions found for session {session_id}.")
             raise HTTPException(
@@ -99,7 +153,6 @@ class ReconciliationService:
         to include full canonical descriptions, reference codes, dates, and amounts.
         Optimized with joinedload to prevent N+1 query problems.
         """
-        from sqlalchemy.orm import joinedload
         return db.query(ReconciliationResult).options(
             joinedload(ReconciliationResult.bank_transaction),
             joinedload(ReconciliationResult.ledger_transaction)

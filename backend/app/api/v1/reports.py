@@ -8,11 +8,15 @@ import io
 
 router = APIRouter(tags=["Reports"])
 
+from app.core.auth import require_any_role
+from app.models.base import User
+
 @router.get("/investigation/{session_id}")
-async def download_investigation_report(
-    session_id: str,
-    format: str = Query("pdf", pattern="^(csv|xlsx|pdf)$"),
-    db: Session = Depends(get_db)
+def download_investigation_report(
+    session_id: str, 
+    format: str = Query(..., description="csv, xlsx, or pdf"),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_any_role)
 ):
     """Generate and download an investigation report in CSV, XLSX, or PDF format."""
     logger.info(f"API: Generating {format.upper()} investigation report for session {session_id}")

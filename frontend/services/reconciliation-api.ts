@@ -44,54 +44,51 @@ export interface RunReconciliationResponse {
 
 
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
+import { api } from "./api-client";
 
 export class ReconciliationApiService {
   /**
    * Invokes the deterministic matching engine on the session.
    */
   static async runReconciliation(sessionId: string): Promise<StandardResponse<RunReconciliationResponse>> {
-    const res = await fetch(`${API_BASE_URL}/reconciliation/run/${sessionId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.detail || `Reconciliation failure with status code ${res.status}`);
-    }
-    return res.json();
+    const res = await api.post(`/reconciliation/run/${sessionId}`);
+    return res.data;
   }
 
   /**
    * Loads the paired detailed transactional matches.
    */
   static async getReconciliationResults(sessionId: string): Promise<StandardResponse<ReconciliationResult[]>> {
-    const res = await fetch(`${API_BASE_URL}/reconciliation/results/${sessionId}`);
-    if (!res.ok) {
-      throw new Error(`Failed retrieving reconciliation results with status code ${res.status}`);
-    }
-    return res.json();
+    const res = await api.get(`/reconciliation/results/${sessionId}`);
+    return res.data;
   }
 
   /**
    * Loads the session metrics and aggregate matching numbers.
    */
   static async getReconciliationSummary(sessionId: string): Promise<StandardResponse<ReconciliationSummary>> {
-    const res = await fetch(`${API_BASE_URL}/reconciliation/summary/${sessionId}`);
-    if (!res.ok) {
-      throw new Error(`Failed retrieving reconciliation summary with status code ${res.status}`);
-    }
-    return res.json();
+    const res = await api.get(`/reconciliation/summary/${sessionId}`);
+    return res.data;
   }
 
 
   /**
-   * Computes the download URL for exporting results as CSV or Excel sheets.
+   * Securely downloads an exported report using the JWT token and Blob manipulation.
    */
-  static getExportUrl(sessionId: string, format: "csv" | "xlsx"): string {
-    return `${API_BASE_URL}/reconciliation/export/${sessionId}?format=${format}`;
+  static async downloadExport(sessionId: string, format: "csv" | "xlsx"): Promise<void> {
+    const res = await api.get(`/reconciliation/export/${sessionId}?format=${format}`, {
+      responseType: 'blob'
+    });
+    
+    // Create hidden anchor element to trigger download
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `reconciliation_export_${sessionId}.${format}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   }
 }
 

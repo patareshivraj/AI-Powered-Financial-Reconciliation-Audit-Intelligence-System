@@ -12,8 +12,16 @@ router = APIRouter(tags=["AI Assistant"])
 class ChatQueryPayload(BaseModel):
     query: str
 
+from app.core.auth import require_analyst_or_admin
+from app.models.base import User
+
 @router.post("/chat/{session_id}", response_model=StandardResponse)
-async def chat_with_assistant(session_id: str, payload: ChatQueryPayload, db: Session = Depends(get_db)):
+async def chat_with_assistant(
+    session_id: str, 
+    payload: ChatQueryPayload, 
+    db: Session = Depends(get_db),
+    user: User = Depends(require_analyst_or_admin)
+):
     """Conversational endpoint to query reconciliation session data."""
     clean_query = sanitize_ai_query(payload.query)
     logger.info(f"API: Processing AI Assistant query for session {session_id}: {clean_query[:80]}")

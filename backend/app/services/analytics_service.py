@@ -1,5 +1,5 @@
 import pandas as pd
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.base import ReconciliationSession, ReconciliationResult, Transaction
 from app.utils.logging import logger
 from typing import Dict, Any, List
@@ -13,7 +13,10 @@ class AnalyticsService:
         """
         logger.info(f"Generating deterministic analytics for session {session_id}")
         
-        results = db.query(ReconciliationResult).filter(ReconciliationResult.session_id == session_id).all()
+        results = db.query(ReconciliationResult).options(
+            joinedload(ReconciliationResult.bank_transaction),
+            joinedload(ReconciliationResult.ledger_transaction)
+        ).filter(ReconciliationResult.session_id == session_id).all()
         if not results:
             return {"error": "No data found for session."}
             
