@@ -220,17 +220,17 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-[#09090b] text-neutral-100 overflow-hidden font-sans">
       {/* 1. Left Sidebar Navigation */}
-      <aside className="w-[280px] border-r border-white/[0.05] bg-black flex flex-col justify-between p-5 shrink-0 z-10 relative">
+      <aside className="hidden md:flex w-[280px] border-r border-white/[0.05] bg-black flex-col justify-between p-6 shrink-0 z-10 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
         <div className="relative z-10">
           {/* Platform Title */}
-          <div className="flex items-center gap-3 px-2 py-4 mb-8">
-            <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-extrabold text-xl border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-              <Sparkles className="h-5 w-5 text-emerald-500" />
+          <div className="flex items-center gap-4 px-2 py-4 mb-8">
+            <div className="h-12 w-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-extrabold text-2xl border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+              <Sparkles className="h-6 w-6 text-emerald-500" />
             </div>
             <div>
-              <h1 className="font-extrabold text-lg tracking-tight text-white leading-tight">BANK AI</h1>
-              <p className="text-[11px] text-neutral-500 font-medium tracking-wide uppercase">Workspace Ops</p>
+              <h1 className="font-extrabold text-xl tracking-tight text-white leading-tight">BANK AI</h1>
+              <p className="text-xs text-neutral-500 font-medium tracking-wide uppercase mt-1">Workspace Ops</p>
             </div>
           </div>
 
@@ -316,30 +316,30 @@ export default function Home() {
 
         {/* Database Status Footer Info */}
         <div className="space-y-4 relative z-10">
-          <div className="p-3.5 bg-white/[0.02] rounded-xl border border-white/[0.05] space-y-3 shadow-inner">
-            <div className="flex items-center justify-between text-xs text-neutral-400">
+          <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.05] space-y-4 shadow-inner">
+            <div className="flex items-center justify-between text-sm text-neutral-400">
               <span className="flex items-center gap-2 font-medium">
-                <Database className="h-3.5 w-3.5 text-neutral-500" /> Database
+                <Database className="h-4 w-4 text-neutral-500" /> Database
               </span>
-              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px] flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-xs flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 ONLINE
               </span>
             </div>
-            <div className="flex items-center justify-between text-xs text-neutral-400">
+            <div className="flex items-center justify-between text-sm text-neutral-400">
               <span className="flex items-center gap-2 font-medium">
-                <Terminal className="h-3.5 w-3.5 text-neutral-500" /> Pipeline
+                <Terminal className="h-4 w-4 text-neutral-500" /> Pipeline
               </span>
-              <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono text-[10px]">
+              <span className="px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono text-xs">
                 LOCAL DEV
               </span>
             </div>
           </div>
           
-          <div className="p-3.5 bg-black rounded-xl border border-white/[0.05] shadow-lg flex items-center justify-between group hover:border-white/10 transition-colors">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Simulated Role</span>
-              <span className="text-xs font-mono text-emerald-400 font-semibold mt-0.5 flex items-center gap-1.5">
+          <div className="p-4 bg-black rounded-xl border border-white/[0.05] shadow-lg flex items-center justify-between group hover:border-white/10 transition-colors">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-neutral-500 uppercase tracking-wider font-bold">Simulated Role</span>
+              <span className="text-sm font-mono text-emerald-400 font-semibold flex items-center gap-2">
                 {typeof window !== 'undefined' ? localStorage.getItem('bank_ai_role') || 'UNKNOWN' : 'LOADING'}
               </span>
             </div>
@@ -349,7 +349,7 @@ export default function Home() {
                 localStorage.removeItem('bank_ai_role');
                 window.location.reload();
               }}
-              className="px-3 py-1.5 rounded-lg bg-red-500/5 hover:bg-red-500/20 text-red-500 text-[11px] font-bold transition-colors ring-1 ring-inset ring-red-500/10 hover:ring-red-500/30"
+              className="px-4 py-2 rounded-lg bg-red-500/5 hover:bg-red-500/20 text-red-500 text-xs font-bold transition-colors ring-1 ring-inset ring-red-500/10 hover:ring-red-500/30"
             >
               Logout
             </button>
@@ -363,7 +363,7 @@ export default function Home() {
         {/* Top Header */}
         <header className="h-16 border-b border-white/[0.05] bg-black/40 backdrop-blur-md flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
           <div className="flex items-center gap-4">
-            <h2 className="text-sm font-semibold text-white tracking-wide">
+            <h2 className="text-base font-semibold text-white tracking-wide">
               {activeTab === "dashboard" && "Platform Overview"}
               {activeTab === "workspace" && "Reconciliation Workspace"}
               {activeTab === "analytics" && "Advanced Analytics"}
@@ -372,18 +372,18 @@ export default function Home() {
               {activeTab === "settings" && "Platform Settings"}
             </h2>
             <div className="h-4 w-px bg-white/[0.1]"></div>
-            <p className="text-[11px] text-neutral-500 font-medium hidden sm:flex items-center gap-1.5 uppercase tracking-wider">
-              <Sparkles className="h-3 w-3 text-emerald-500/70" />
+            <p className="text-xs text-neutral-500 font-medium hidden sm:flex items-center gap-2 uppercase tracking-wider">
+              <Sparkles className="h-4 w-4 text-emerald-500/70" />
               Intelligence Engine Active
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {sessionId && (
-              <div className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400 font-semibold shadow-inner">
+              <div className="px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-400 font-semibold shadow-inner">
                 Session: {sessionId.substring(0, 8).toUpperCase()}
               </div>
             )}
-            <div className="px-2.5 py-1 rounded bg-white/[0.03] border border-white/[0.1] text-[10px] font-mono text-neutral-400 font-medium">
+            <div className="px-3 py-1.5 rounded-md bg-white/[0.03] border border-white/[0.1] text-xs font-mono text-neutral-400 font-medium hidden md:block">
               v0.3.0-rc
             </div>
           </div>

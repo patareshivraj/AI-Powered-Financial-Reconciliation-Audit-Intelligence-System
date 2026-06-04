@@ -41,7 +41,7 @@ export function AnalyticsDashboard({ sessionId }: { sessionId: string }) {
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <Database className="h-16 w-16 text-blue-500" />
           </div>
-          <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Total Processed</span>
+          <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Processed</span>
           <span className="text-2xl font-black text-white font-mono">{data.total_processed}</span>
         </div>
 
@@ -49,7 +49,7 @@ export function AnalyticsDashboard({ sessionId }: { sessionId: string }) {
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <AlertTriangle className="h-16 w-16 text-rose-500" />
           </div>
-          <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+          <span className="text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
             Mismatch Value Risk
           </span>
           <span className="text-2xl font-black text-rose-400 font-mono">

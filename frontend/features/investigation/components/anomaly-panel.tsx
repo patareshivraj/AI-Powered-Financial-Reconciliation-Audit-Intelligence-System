@@ -54,15 +54,15 @@ export function AnomalyPanel({ sessionId }: { sessionId: string }) {
               <AlertCircle className="h-12 w-12 text-rose-500" />
             </div>
             <div className="flex justify-between items-start">
-              <span className="px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 text-[10px] font-bold uppercase tracking-wider font-mono">
+              <span className="px-3 py-1 rounded-full bg-rose-500/10 text-rose-400 text-xs font-bold uppercase tracking-wider font-mono">
                 {a.type.replace(/_/g, " ")}
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">ID: {a.result_id}</span>
+              <span className="text-xs text-slate-500 font-mono">ID: {a.result_id}</span>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed font-sans mt-1">
+            <p className="text-sm text-slate-300 leading-relaxed font-sans mt-2">
               {a.description}
             </p>
-            <div className="pt-3 border-t border-rose-900/30 text-[10px] text-rose-400/80 font-mono font-medium">
+            <div className="pt-3 border-t border-rose-900/30 text-xs text-rose-400/80 font-mono font-medium mt-auto">
               Severity: {a.severity}
             </div>
           </div>

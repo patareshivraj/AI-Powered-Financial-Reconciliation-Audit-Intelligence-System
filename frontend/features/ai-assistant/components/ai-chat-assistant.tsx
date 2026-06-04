@@ -68,7 +68,7 @@ export function AiChatAssistant({ sessionId }: { sessionId: string }) {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white">Investigation Assistant</h3>
-                <p className="text-[10px] text-slate-400 font-mono">Llama-3 70B Analytics Engine</p>
+                <p className="text-xs text-slate-400 font-mono">Llama-3 70B Analytics Engine</p>
               </div>
             </div>
             <button 
@@ -95,8 +95,8 @@ export function AiChatAssistant({ sessionId }: { sessionId: string }) {
                 }`}>
                   {msg.content}
                   {msg.filters && Object.keys(msg.filters).length > 0 && (
-                    <div className="mt-3 p-2 bg-slate-950 rounded-lg border border-slate-800 font-mono text-[10px] text-emerald-400">
-                      <span className="text-slate-500 block mb-1">Suggested Filters:</span>
+                    <div className="mt-3 p-3 bg-slate-950 rounded-lg border border-slate-800 font-mono text-xs text-emerald-400">
+                      <span className="text-slate-500 block mb-1 font-bold">Suggested Filters:</span>
                       {JSON.stringify(msg.filters, null, 2)}
                     </div>
                   )}

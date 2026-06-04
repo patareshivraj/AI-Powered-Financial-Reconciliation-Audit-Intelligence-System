@@ -14,13 +14,15 @@ class MismatchExplanationService:
         bank_data = {
             "amount": result.bank_transaction.amount,
             "reference": result.bank_transaction.reference,
-            "date": str(result.bank_transaction.date)
+            "description": result.bank_transaction.description,
+            "date": str(result.bank_transaction.transaction_date)
         } if result.bank_transaction else None
 
         ledger_data = {
             "amount": result.ledger_transaction.amount,
             "reference": result.ledger_transaction.reference,
-            "date": str(result.ledger_transaction.date)
+            "description": result.ledger_transaction.description,
+            "date": str(result.ledger_transaction.transaction_date)
         } if result.ledger_transaction else None
 
         context = {

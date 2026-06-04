@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ReconciliationResult, ReconciliationApiService } from "../services/reconciliation-api";
 import { AiApiService, MismatchExplanation } from "../features/ai/services/ai-api";
 import { StatusBadge } from "./status-badge";
@@ -31,6 +32,11 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
   const [aiLoading, setAiLoading] = useState(false);
   const [aiData, setAiData] = useState<MismatchExplanation | null>(null);
   const [aiError, setAiError] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const formatCurrency = (val: number | null | undefined) => {
     if (val === null || val === undefined) return "—";
@@ -99,11 +105,11 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
       header: 'Reconciliation Key',
       size: 150,
       cell: info => (
-        <div className="flex flex-col gap-0.5 px-4 py-3">
-          <span className="font-mono font-bold text-neutral-200 text-xs px-2 py-0.5 rounded bg-black/40 border border-white/5 w-fit">
+        <div className="flex flex-col gap-1 px-4 py-3">
+          <span className="font-mono font-bold text-neutral-200 text-sm px-2 py-1 rounded bg-black/40 border border-white/5 w-fit">
             {info.getValue()}
           </span>
-          <span className="text-[10px] text-neutral-500 font-sans mt-1 uppercase tracking-wider font-bold">Ref ID</span>
+          <span className="text-xs text-neutral-500 font-sans mt-1 uppercase tracking-wider font-bold">Ref ID</span>
         </div>
       )
     }),
@@ -114,9 +120,9 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
       cell: ({ row }) => {
         const r = row.original;
         return (
-          <div className="flex flex-col gap-1.5 justify-center px-4 py-3">
+          <div className="flex flex-col gap-2 justify-center px-4 py-3">
             <StatusBadge status={r.status} />
-            <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 font-mono font-bold">
+            <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-mono font-bold">
               <span>Match Score:</span>
               <span className={r.match_score >= 90 ? "text-emerald-400" : r.match_score >= 40 ? "text-yellow-400" : "text-rose-500"}>
                 {r.match_score}%
@@ -229,7 +235,7 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
   });
 
   return (
-    <div className="w-full space-y-4 relative z-0">
+    <div className="w-full space-y-4">
       <AdvancedFilterPanel
         filters={filters}
         onChange={handleFilterChange}
@@ -318,15 +324,15 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
             </tbody>
           </table>
         </div>
-        <div className="p-4 border-t border-white/[0.05] flex items-center justify-between bg-black/40 text-[10px] text-neutral-500 font-mono font-medium tracking-wide">
+        <div className="p-4 border-t border-white/[0.05] flex items-center justify-between bg-black/40 text-xs text-neutral-500 font-mono font-medium tracking-wide">
           <span>Displaying {filteredResults.length} / {results.length} mapped records</span>
           <span>Powered by Deterministic Engine v2.0</span>
         </div>
       </div>
 
       {/* Slide-out Premium AI Audit Review Panel */}
-      {selectedResult && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-end font-sans transition-all duration-300">
+      {selectedResult && mounted && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-end font-sans transition-all duration-300">
           <div className="w-full max-w-lg h-full bg-[#09090b] border-l border-white/[0.05] p-6 flex flex-col justify-between shadow-2xl relative">
             <div>
               <div className="flex justify-between items-center pb-4 border-b border-white/[0.05]">
@@ -344,11 +350,11 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
                 </button>
               </div>
 
-              <div className="mt-5 p-3.5 bg-black rounded-xl border border-white/[0.05] shadow-inner flex justify-between items-center text-xs">
+              <div className="mt-6 p-4 bg-black rounded-xl border border-white/[0.05] shadow-inner flex justify-between items-center text-sm">
                 <span className="font-mono text-neutral-400">
                   Key Reference: <b className="text-white font-bold">{selectedResult.bank_transaction?.reference || selectedResult.ledger_transaction?.reference || "N/A"}</b>
                 </span>
-                <span className="px-2 py-1 rounded-md bg-[#09090b] text-amber-400 border border-amber-500/20 text-[9px] uppercase font-bold font-mono tracking-wider shadow-sm">
+                <span className="px-3 py-1.5 rounded-md bg-[#09090b] text-amber-400 border border-amber-500/20 text-xs uppercase font-bold font-mono tracking-wider shadow-sm">
                   {selectedResult.status.replace("_", " ")}
                 </span>
               </div>
@@ -393,9 +399,9 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
                       ))}
                     </div>
                   </div>
-                  <div className="pt-5 border-t border-white/[0.05] flex items-center justify-between text-xs">
+                  <div className="pt-6 border-t border-white/[0.05] flex items-center justify-between text-sm">
                     <span className="text-neutral-500 font-medium">Model Inference Accuracy:</span>
-                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold font-mono ${
+                    <span className={`px-3 py-1 rounded-md text-xs font-bold font-mono ${
                       aiData.confidence_indicator === "HIGH" 
                         ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
                         : "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
@@ -407,14 +413,15 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
               )}
             </div>
             
-            <div className="p-4 bg-black rounded-xl border border-white/[0.05] shadow-inner text-[10px] text-neutral-500 leading-relaxed flex gap-3 items-start">
-              <HelpCircle className="h-4 w-4 text-neutral-600 shrink-0 mt-0.5" />
+            <div className="p-4 bg-black rounded-xl border border-white/[0.05] shadow-inner text-xs text-neutral-500 leading-relaxed flex gap-3 items-start">
+              <HelpCircle className="h-5 w-5 text-neutral-600 shrink-0 mt-0.5" />
               <span>
                 <strong className="text-neutral-300">AI Discrepancy reviews are advisory.</strong> This output is generated using Llama 3 70B assistive analytics and must be manually approved. It does not modify accounting persistent records or exact deterministic matching results.
               </span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

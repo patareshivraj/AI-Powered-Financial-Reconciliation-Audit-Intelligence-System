@@ -44,11 +44,11 @@ export function DataPreviewTable({ data, title }: DataPreviewTableProps) {
 
         {/* Dynamic Summaries */}
         <div className="flex items-center gap-3">
-          <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] md:text-xs">
+          <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
             <span className="text-slate-500 mr-1.5 font-medium">Deposits:</span>
             <span className="text-emerald-400 font-semibold">{formatCurrency(data.metrics.total_deposits_volume)}</span>
           </div>
-          <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] md:text-xs">
+          <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
             <span className="text-slate-500 mr-1.5 font-medium">Withdrawals:</span>
             <span className="text-red-400 font-semibold">{formatCurrency(data.metrics.total_withdrawals_volume)}</span>
           </div>
@@ -65,7 +65,7 @@ export function DataPreviewTable({ data, title }: DataPreviewTableProps) {
           {Object.entries(data.mapped_columns).map(([rawCol, canonKey]) => (
             <div
               key={rawCol}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-800/80 text-[10px] font-mono text-slate-300 shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-900 border border-slate-800/80 text-xs font-mono text-slate-300 shadow-sm"
             >
               <span className="text-slate-500 font-sans">{rawCol}</span>
               <ArrowRight className="h-3 w-3 text-emerald-500" />
@@ -73,7 +73,7 @@ export function DataPreviewTable({ data, title }: DataPreviewTableProps) {
             </div>
           ))}
           {Object.keys(data.mapped_columns).length === 0 && (
-            <div className="text-[10px] text-slate-500 italic">No direct custom mappings matched. System using core schemas.</div>
+            <div className="text-xs text-slate-500 italic">No direct custom mappings matched. System using core schemas.</div>
           )}
         </div>
       </div>
@@ -102,7 +102,7 @@ export function DataPreviewTable({ data, title }: DataPreviewTableProps) {
                   </td>
                   <td className="p-4 font-mono text-slate-400">
                     {row.reference_id ? (
-                      <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px]">
+                      <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-xs">
                         {row.reference_id}
                       </span>
                     ) : (
@@ -114,7 +114,7 @@ export function DataPreviewTable({ data, title }: DataPreviewTableProps) {
                   </td>
                   <td className="p-4">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider ${
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold tracking-wider ${
                         isCredit
                           ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                           : "bg-red-500/10 text-red-400 border border-red-500/20"
@@ -149,21 +149,21 @@ export function DataPreviewTable({ data, title }: DataPreviewTableProps) {
       {/* 4. Paginated Actions bar */}
       {totalPages > 1 && (
         <div className="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-900/15">
-          <span className="text-[11px] text-slate-500">
+          <span className="text-xs text-slate-500">
             Showing rows {startIndex + 1} to {Math.min(startIndex + rowsPerPage, totalRows)} of {totalRows}
           </span>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 0))}
               disabled={currentPage === 0}
-              className="px-2.5 py-1 text-[11px] rounded bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages - 1))}
               disabled={currentPage === totalPages - 1}
-              className="px-2.5 py-1 text-[11px] rounded bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>
