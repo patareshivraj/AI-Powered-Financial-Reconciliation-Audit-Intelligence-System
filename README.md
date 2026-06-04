@@ -35,7 +35,7 @@ graph TD
     D --> E[Mismatch Explainer Module]:::dark
     D --> F[Merchant Intelligence Module]:::dark
     D --> G[Operational Insights Module]:::dark
-    E --> H[Next.js Dashboard]:::dark
+    E --> H[React Dashboard]:::dark
     F --> H
     G --> H
 ```
@@ -115,10 +115,11 @@ BANK AI
 |           |-- ai_summary_service.py # Groq prompt engineering for session summaries
 |           |-- merchant_intelligence_service.py # Merchant analytics and breakdown
 |           |-- mismatch_explanation_service.py # Granular mismatch AI analysis
-|-- frontend/                     # Next.js React Frontend
-|   |-- app/
-|   |   |-- page.tsx              # Main dashboard view
-|   |   |-- globals.css           # Tailwind configuration
+|-- frontend/                     # React Frontend (Create React App)
+|   |-- public/                   # Static assets
+|   |-- src/
+|   |   |-- App.tsx               # Main dashboard view
+|   |   |-- index.css             # Tailwind configuration
 |   |-- components/
 |   |   |-- ai-audit-drawer.tsx   # Portal-based UI overlay for AI mismatch reviews
 |   |   |-- error-boundary.tsx    # React error catching
@@ -148,8 +149,10 @@ BANK AI
 3. **Frontend Setup (Node.js):**
    ```bash
    cd frontend
-   npm install
+   npm install --legacy-peer-deps
    ```
+
+> **For DevOps / Production Deployment:** Please see [frontend/README_DEVOPS.md](frontend/README_DEVOPS.md) for strict production deployment guidelines, Nginx routing, and `.env.production` setup.
 
 4. **Environment Variables:**
    Create a `.env` file in the `backend/` directory:
@@ -170,7 +173,7 @@ python main.py
 **Terminal 2 (Frontend):**
 ```bash
 cd frontend
-npm run dev
+npm start
 ```
 
 ### Key API Endpoints
@@ -273,7 +276,7 @@ Run tests via: `pytest tests/`
 | Backend Framework | FastAPI (Python 3.12) |
 | Database | SQLite (SQLAlchemy ORM) |
 | AI Inference | Groq API (Llama-3 70B) |
-| Frontend Core | Next.js 16 (App Router) |
+| Frontend Core | React 19 (Create React App) |
 | UI/Styling | React, TailwindCSS, Lucide Icons |
 
 ## License
