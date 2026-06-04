@@ -761,14 +761,12 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                <div className="xl:col-span-8 space-y-6">
-                  <AnomalyPanel sessionId={sessionId} />
-                  <MerchantDatagrid sessionId={sessionId} />
-                </div>
-                <div className="xl:col-span-4">
-                  <AiChatAssistant sessionId={sessionId} />
-                </div>
+              <div className="space-y-6 relative">
+                <AnomalyPanel sessionId={sessionId} />
+                <MerchantDatagrid sessionId={sessionId} />
+                
+                {/* AI Assistant is now a floating widget */}
+                <AiChatAssistant sessionId={sessionId} />
               </div>
             </div>
           )}
