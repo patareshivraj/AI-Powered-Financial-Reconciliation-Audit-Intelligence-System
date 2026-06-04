@@ -67,7 +67,7 @@ class MerchantIntelligenceService:
                     "date": r.bank_transaction.transaction_date,
                     "amount": r.bank_transaction.amount,
                     "status": r.match_type,
-                    "remarks": r.remarks
+                    "remarks": r.comments
                 }
                 merchant_txs.append(item)
                 total_vol += (r.bank_transaction.amount or 0.0)
