@@ -358,7 +358,7 @@ export default function Home() {
       </aside>
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col h-full bg-[#09090b] relative z-0">
+      <div className="flex-1 flex flex-col h-full bg-[#09090b]">
         
         {/* Top Header */}
         <header className="h-16 border-b border-white/[0.05] bg-black/40 backdrop-blur-md flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
