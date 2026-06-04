@@ -549,9 +549,6 @@ function DashboardContent() {
           </ErrorBoundary>
         </div>
       </div>
-      
-      {/* Floating AI Chat Widget */}
-      <AiChatAssistant />
     </div>
   );
 }
