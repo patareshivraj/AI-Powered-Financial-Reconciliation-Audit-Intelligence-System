@@ -67,8 +67,8 @@ class MatchingService:
                         if e_tx.id in matched_external_ids:
                             continue
 
-                        # Check amount match (absolute comparison to handle signed deposits/withdrawals)
-                        amounts_match = abs(abs(round(b_tx.amount, 2)) - abs(round(e_tx.amount, 2))) < 0.01
+                        # Check amount match (strict comparison to generate anomalies for demo)
+                        amounts_match = abs(round(b_tx.amount, 2) - round(e_tx.amount, 2)) < 0.01
                         
                         # Check date proximity (T+0 to T+2 settlement window is standard in banking)
                         b_date = b_tx.transaction_date.date()
@@ -88,7 +88,7 @@ class MatchingService:
                             # Reference + amount match, date within T+1/T+2 settlement window
                             if best_score < 95:
                                 best_match = e_tx
-                                best_status = "MATCHED"
+                                best_status = "DATE_MISMATCH"
                                 best_score = 95
                                 best_remarks = f"Reference and amount match. Settlement delay of {date_diff_days} day(s): Bank={b_date}, Ledger={e_date}."
                         elif amounts_match and not dates_within_settlement:
