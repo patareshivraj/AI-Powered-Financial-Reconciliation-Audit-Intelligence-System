@@ -77,12 +77,12 @@ export function MerchantDatagrid({ sessionId }: { sessionId: string }) {
           <table className="w-full text-left text-xs border-collapse">
             <thead className="sticky top-0 z-10 bg-black/80 backdrop-blur-xl border-b border-white/[0.05]">
               <tr>
-                <th className="px-4 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px]">Merchant / Entity</th>
-                <th className="px-4 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-right">Transactions</th>
-                <th className="px-4 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-right">Total Volume</th>
-                <th className="px-4 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-right">Mismatches</th>
-                <th className="px-4 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-right">Risk Score</th>
-                <th className="px-4 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-center">Action</th>
+                <th className="px-3 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px]">Merchant / Entity</th>
+                <th className="px-3 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-right">Transactions</th>
+                <th className="px-3 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-right">Total Volume</th>
+                <th className="px-3 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-right">Mismatches</th>
+                <th className="px-3 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-right">Risk Score</th>
+                <th className="px-3 py-3.5 font-bold text-neutral-300 tracking-wider uppercase text-[10px] text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.02]">
@@ -91,16 +91,16 @@ export function MerchantDatagrid({ sessionId }: { sessionId: string }) {
                 const riskBg = row.risk_score > 50 ? "bg-rose-500/10 border-rose-500/20" : row.risk_score > 20 ? "bg-yellow-500/10 border-yellow-500/20" : "bg-emerald-500/10 border-emerald-500/20";
                 return (
                   <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
-                    <td className="px-4 py-3 border-b border-white/[0.02]">
-                      <span className="text-neutral-200 font-medium truncate block max-w-[220px]">{row.merchant}</span>
+                    <td className="px-3 py-3 border-b border-white/[0.02]">
+                      <span className="text-neutral-200 font-medium truncate block max-w-[160px] xl:max-w-[200px]">{row.merchant}</span>
                     </td>
-                    <td className="px-4 py-3 border-b border-white/[0.02] text-right font-mono text-neutral-400">
+                    <td className="px-3 py-3 border-b border-white/[0.02] text-right font-mono text-neutral-400">
                       {row.transaction_count}
                     </td>
-                    <td className="px-4 py-3 border-b border-white/[0.02] text-right font-mono text-neutral-200 font-bold">
+                    <td className="px-3 py-3 border-b border-white/[0.02] text-right font-mono text-neutral-200 font-bold">
                       {fmt(row.total_volume)}
                     </td>
-                    <td className="px-4 py-3 border-b border-white/[0.02] text-right">
+                    <td className="px-3 py-3 border-b border-white/[0.02] text-right">
                       {row.mismatch_count > 0 ? (
                         <span className="text-rose-400 font-mono font-bold flex items-center justify-end gap-1.5 bg-rose-500/10 px-2 py-0.5 rounded w-fit ml-auto">
                           <AlertTriangle className="h-3 w-3" /> {row.mismatch_count}
@@ -109,12 +109,12 @@ export function MerchantDatagrid({ sessionId }: { sessionId: string }) {
                         <span className="text-neutral-500 font-mono">0</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 border-b border-white/[0.02] text-right">
+                    <td className="px-3 py-3 border-b border-white/[0.02] text-right">
                       <span className={`px-2 py-1 rounded-md text-[10px] font-bold font-mono border shadow-sm ${riskBg} ${riskColor}`}>
                         {row.risk_score.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="px-4 py-3 border-b border-white/[0.02] text-center">
+                    <td className="px-3 py-3 border-b border-white/[0.02] text-center">
                       <button 
                         onClick={() => fetchDeepDive(row.merchant)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition-all text-[10px] font-bold uppercase tracking-wider mx-auto"
