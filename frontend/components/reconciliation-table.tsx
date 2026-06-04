@@ -280,8 +280,8 @@ export function ReconciliationTable({ results, sessionId }: ReconciliationTableP
                 </tr>
               ) : (
                 <tr style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
-                  <td colSpan={5} className="p-0">
-                    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                  <td colSpan={5} className="p-0 align-top">
+                    <div style={{ position: 'relative', width: '100%', height: `${rowVirtualizer.getTotalSize()}px` }}>
                       {rowVirtualizer.getVirtualItems().map(virtualRow => {
                         const row = rows[virtualRow.index];
                         return (
